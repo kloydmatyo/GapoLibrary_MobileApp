@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/context/AuthContext';
+import Colors from '@/constants/colors';
 
 const QUICK_ACTIONS = [
   { label: 'Browse Books', icon: 'book-outline', route: '/(tabs)/books' },
@@ -28,14 +29,14 @@ export default function HomeScreen() {
             style={styles.card}
             onPress={() => router.push(action.route as any)}
           >
-            <Ionicons name={action.icon as any} size={32} color="#1a56db" />
+            <Ionicons name={action.icon as any} size={32} color={Colors.brand} />
             <Text style={styles.cardLabel}>{action.label}</Text>
           </TouchableOpacity>
         ))}
       </View>
 
       <View style={styles.infoCard}>
-        <Ionicons name="information-circle-outline" size={20} color="#1a56db" />
+        <Ionicons name="information-circle-outline" size={20} color={Colors.brand} />
         <Text style={styles.infoText}>
           Visit the library or use the web portal to borrow and return books.
         </Text>
@@ -45,22 +46,22 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f0f4ff' },
+  container: { flex: 1, backgroundColor: Colors.background },
   content: { padding: 20 },
-  hero: { backgroundColor: '#1a56db', borderRadius: 16, padding: 24, marginBottom: 24 },
+  hero: { backgroundColor: Colors.brand, borderRadius: 16, padding: 24, marginBottom: 24 },
   greeting: { fontSize: 22, fontWeight: '700', color: '#fff' },
-  subGreeting: { fontSize: 14, color: '#bfdbfe', marginTop: 4 },
-  sectionTitle: { fontSize: 16, fontWeight: '600', color: '#374151', marginBottom: 12 },
+  subGreeting: { fontSize: 14, color: Colors.primary[200], marginTop: 4 },
+  sectionTitle: { fontSize: 16, fontWeight: '600', color: Colors.textPrimary, marginBottom: 12 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 24 },
   card: {
-    backgroundColor: '#fff', borderRadius: 14, padding: 20,
+    backgroundColor: Colors.surface, borderRadius: 14, padding: 20,
     alignItems: 'center', width: '47%', elevation: 2,
     shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6,
   },
-  cardLabel: { marginTop: 8, fontSize: 13, fontWeight: '600', color: '#374151', textAlign: 'center' },
+  cardLabel: { marginTop: 8, fontSize: 13, fontWeight: '600', color: Colors.textPrimary, textAlign: 'center' },
   infoCard: {
-    backgroundColor: '#eff6ff', borderRadius: 12, padding: 16,
+    backgroundColor: Colors.brandMuted, borderRadius: 12, padding: 16,
     flexDirection: 'row', alignItems: 'flex-start', gap: 10,
   },
-  infoText: { flex: 1, fontSize: 13, color: '#1e40af', lineHeight: 20 },
+  infoText: { flex: 1, fontSize: 13, color: Colors.brandDark, lineHeight: 20 },
 });

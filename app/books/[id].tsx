@@ -6,6 +6,7 @@ import {
 import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getBook, createReservation } from '@/lib/api';
+import Colors from '@/constants/colors';
 
 interface Book {
   _id: string;
@@ -49,7 +50,7 @@ export default function BookDetailScreen() {
     }
   };
 
-  if (loading) return <ActivityIndicator style={{ marginTop: 60 }} size="large" color="#1a56db" />;
+  if (loading) return <ActivityIndicator style={{ marginTop: 60 }} size="large" color={Colors.brand} />;
   if (!book) return <Text style={styles.empty}>Book not found.</Text>;
 
   const available = book.availableCopies > 0;
@@ -59,7 +60,7 @@ export default function BookDetailScreen() {
       <View style={styles.coverWrap}>
         {book.coverImageUrl
           ? <Image source={{ uri: book.coverImageUrl }} style={styles.cover} resizeMode="cover" />
-          : <Ionicons name="book" size={64} color="#1a56db" />}
+          : <Ionicons name="book" size={64} color={Colors.brand} />}
       </View>
 
       <Text style={styles.title}>{book.title}</Text>
@@ -68,7 +69,11 @@ export default function BookDetailScreen() {
       <View style={styles.badges}>
         <View style={styles.badge}><Text style={styles.badgeText}>{book.category}</Text></View>
         {book.section && <View style={styles.badge}><Text style={styles.badgeText}>{book.section}</Text></View>}
-        {book.isEbook && <View style={[styles.badge, { backgroundColor: '#fef9c3' }]}><Text style={[styles.badgeText, { color: '#854d0e' }]}>eBook</Text></View>}
+        {book.isEbook && (
+          <View style={[styles.badge, { backgroundColor: Colors.warningBg }]}>
+            <Text style={[styles.badgeText, { color: Colors.warning }]}>eBook</Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.card}>
@@ -80,7 +85,7 @@ export default function BookDetailScreen() {
         ].filter(Boolean).map(([label, value]) => (
           <View key={label as string} style={styles.row}>
             <Text style={styles.label}>{label}</Text>
-            <Text style={[styles.value, label === 'Available Copies' && { color: available ? '#16a34a' : '#dc2626', fontWeight: '700' }]}>
+            <Text style={[styles.value, label === 'Available Copies' && { color: available ? Colors.success : Colors.error, fontWeight: '700' }]}>
               {value}
             </Text>
           </View>
@@ -108,31 +113,31 @@ export default function BookDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f0f4ff' },
+  container: { flex: 1, backgroundColor: Colors.background },
   content: { padding: 20 },
   coverWrap: {
-    width: 120, height: 160, borderRadius: 10, backgroundColor: '#eff6ff',
+    width: 120, height: 160, borderRadius: 10, backgroundColor: Colors.brandLight,
     justifyContent: 'center', alignItems: 'center', alignSelf: 'center',
     marginBottom: 16, overflow: 'hidden', elevation: 4,
   },
   cover: { width: '100%', height: '100%' },
-  title: { fontSize: 20, fontWeight: '700', color: '#111827', textAlign: 'center', marginBottom: 4 },
-  author: { fontSize: 14, color: '#6b7280', textAlign: 'center', marginBottom: 12 },
+  title: { fontSize: 20, fontWeight: '700', color: Colors.textPrimary, textAlign: 'center', marginBottom: 4 },
+  author: { fontSize: 14, color: Colors.textSecond, textAlign: 'center', marginBottom: 12 },
   badges: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginBottom: 16 },
-  badge: { backgroundColor: '#eff6ff', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
-  badgeText: { fontSize: 12, color: '#1a56db', fontWeight: '600' },
+  badge: { backgroundColor: Colors.brandLight, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
+  badgeText: { fontSize: 12, color: Colors.brand, fontWeight: '600' },
   card: {
-    backgroundColor: '#fff', borderRadius: 14, padding: 16, marginBottom: 12,
+    backgroundColor: Colors.surface, borderRadius: 14, padding: 16, marginBottom: 12,
     elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4,
   },
   row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
-  label: { fontSize: 13, color: '#6b7280' },
-  value: { fontSize: 13, color: '#111827', fontWeight: '500' },
-  descCard: { backgroundColor: '#fff', borderRadius: 14, padding: 16, marginBottom: 16, elevation: 2 },
-  descTitle: { fontSize: 14, fontWeight: '700', color: '#111827', marginBottom: 8 },
+  label: { fontSize: 13, color: Colors.textSecond },
+  value: { fontSize: 13, color: Colors.textPrimary, fontWeight: '500' },
+  descCard: { backgroundColor: Colors.surface, borderRadius: 14, padding: 16, marginBottom: 16, elevation: 2 },
+  descTitle: { fontSize: 14, fontWeight: '700', color: Colors.textPrimary, marginBottom: 8 },
   desc: { fontSize: 13, color: '#4b5563', lineHeight: 20 },
-  reserveBtn: { backgroundColor: '#1a56db', borderRadius: 12, padding: 16, alignItems: 'center', marginBottom: 20 },
-  disabledBtn: { backgroundColor: '#9ca3af' },
+  reserveBtn: { backgroundColor: Colors.brand, borderRadius: 12, padding: 16, alignItems: 'center', marginBottom: 20 },
+  disabledBtn: { backgroundColor: Colors.textMuted },
   reserveText: { color: '#fff', fontWeight: '700', fontSize: 16 },
-  empty: { textAlign: 'center', marginTop: 60, color: '#9ca3af' },
+  empty: { textAlign: 'center', marginTop: 60, color: Colors.textMuted },
 });

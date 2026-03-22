@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getHistory } from '@/lib/api';
+import Colors from '@/constants/colors';
 
 interface HistoryItem {
   _id: string;
@@ -14,9 +15,9 @@ interface HistoryItem {
 }
 
 const STATUS_CONFIG = {
-  active: { color: '#1a56db', bg: '#eff6ff', label: 'Active' },
-  returned: { color: '#16a34a', bg: '#f0fdf4', label: 'Returned' },
-  overdue: { color: '#dc2626', bg: '#fef2f2', label: 'Overdue' },
+  active:   { color: Colors.brand,   bg: Colors.brandLight, label: 'Active' },
+  returned: { color: Colors.success, bg: Colors.primary[50], label: 'Returned' },
+  overdue:  { color: Colors.error,   bg: Colors.errorBg,    label: 'Overdue' },
 };
 
 export default function HistoryScreen() {
@@ -37,7 +38,7 @@ export default function HistoryScreen() {
     return (
       <View style={styles.item}>
         <View style={styles.iconWrap}>
-          <Ionicons name="book-outline" size={22} color="#1a56db" />
+          <Ionicons name="book-outline" size={22} color={Colors.brand} />
         </View>
         <View style={styles.info}>
           <Text style={styles.bookTitle} numberOfLines={2}>{item.bookTitle}</Text>
@@ -53,7 +54,7 @@ export default function HistoryScreen() {
     );
   };
 
-  if (loading) return <ActivityIndicator style={{ marginTop: 60 }} size="large" color="#1a56db" />;
+  if (loading) return <ActivityIndicator style={{ marginTop: 60 }} size="large" color={Colors.brand} />;
 
   return (
     <View style={styles.container}>
@@ -64,7 +65,7 @@ export default function HistoryScreen() {
         contentContainerStyle={styles.list}
         ListEmptyComponent={
           <View style={styles.emptyWrap}>
-            <Ionicons name="time-outline" size={48} color="#d1d5db" />
+            <Ionicons name="time-outline" size={48} color={Colors.border} />
             <Text style={styles.empty}>No borrowing history yet.</Text>
           </View>
         }
@@ -74,20 +75,20 @@ export default function HistoryScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f0f4ff' },
+  container: { flex: 1, backgroundColor: Colors.background },
   list: { padding: 16 },
   item: {
-    backgroundColor: '#fff', borderRadius: 12, padding: 14, marginBottom: 10,
+    backgroundColor: Colors.surface, borderRadius: 12, padding: 14, marginBottom: 10,
     flexDirection: 'row', alignItems: 'flex-start', gap: 12,
     elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4,
   },
-  iconWrap: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#eff6ff', justifyContent: 'center', alignItems: 'center' },
+  iconWrap: { width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.brandLight, justifyContent: 'center', alignItems: 'center' },
   info: { flex: 1 },
-  bookTitle: { fontSize: 14, fontWeight: '600', color: '#111827', marginBottom: 2 },
-  author: { fontSize: 12, color: '#6b7280', marginBottom: 4 },
-  date: { fontSize: 11, color: '#9ca3af' },
+  bookTitle: { fontSize: 14, fontWeight: '600', color: Colors.textPrimary, marginBottom: 2 },
+  author: { fontSize: 12, color: Colors.textSecond, marginBottom: 4 },
+  date: { fontSize: 11, color: Colors.textMuted },
   badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, alignSelf: 'flex-start' },
   badgeText: { fontSize: 11, fontWeight: '600' },
   emptyWrap: { alignItems: 'center', marginTop: 60 },
-  empty: { marginTop: 12, color: '#9ca3af', fontSize: 14 },
+  empty: { marginTop: 12, color: Colors.textMuted, fontSize: 14 },
 });

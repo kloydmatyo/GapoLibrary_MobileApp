@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { Link } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
+import Colors from '@/constants/colors';
 
 export default function LoginScreen() {
   const { signIn } = useAuth();
@@ -72,13 +73,13 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f0f4ff', justifyContent: 'center', padding: 24 },
-  card: { backgroundColor: '#fff', borderRadius: 16, padding: 24, elevation: 4, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 8 },
-  title: { fontSize: 28, fontWeight: '700', color: '#1a56db', textAlign: 'center', marginBottom: 4 },
-  subtitle: { fontSize: 14, color: '#6b7280', textAlign: 'center', marginBottom: 24 },
-  input: { borderWidth: 1, borderColor: '#d1d5db', borderRadius: 10, padding: 12, marginBottom: 12, fontSize: 15 },
-  button: { backgroundColor: '#1a56db', borderRadius: 10, padding: 14, alignItems: 'center', marginTop: 4 },
+  container: { flex: 1, backgroundColor: Colors.background, justifyContent: 'center', padding: 24 },
+  card: { backgroundColor: Colors.surface, borderRadius: 16, padding: 24, elevation: 4, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 8 },
+  title: { fontSize: 28, fontWeight: '700', color: Colors.brand, textAlign: 'center', marginBottom: 4 },
+  subtitle: { fontSize: 14, color: Colors.textSecond, textAlign: 'center', marginBottom: 24 },
+  input: { borderWidth: 1, borderColor: Colors.border, borderRadius: 10, padding: 12, marginBottom: 12, fontSize: 15 },
+  button: { backgroundColor: Colors.brand, borderRadius: 10, padding: 14, alignItems: 'center', marginTop: 4 },
   buttonText: { color: '#fff', fontWeight: '600', fontSize: 16 },
   link: { marginTop: 16, alignItems: 'center' },
-  linkText: { color: '#1a56db', fontSize: 14 },
+  linkText: { color: Colors.brand, fontSize: 14 },
 });

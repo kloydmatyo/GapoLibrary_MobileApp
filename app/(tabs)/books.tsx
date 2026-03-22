@@ -6,6 +6,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getBooks } from '@/lib/api';
+import Colors from '@/constants/colors';
 
 interface Book {
   _id: string;
@@ -44,19 +45,19 @@ export default function BooksScreen() {
       <View style={styles.cover}>
         {item.coverImageUrl
           ? <Image source={{ uri: item.coverImageUrl }} style={styles.coverImg} />
-          : <Ionicons name="book" size={28} color="#1a56db" />}
+          : <Ionicons name="book" size={28} color={Colors.brand} />}
       </View>
       <View style={styles.info}>
         <Text style={styles.title} numberOfLines={2}>{item.title}</Text>
         <Text style={styles.author}>{item.author}</Text>
         <View style={styles.row}>
           <Text style={styles.category}>{item.category}</Text>
-          <Text style={[styles.avail, { color: item.availableCopies > 0 ? '#16a34a' : '#dc2626' }]}>
+          <Text style={[styles.avail, { color: item.availableCopies > 0 ? Colors.success : Colors.error }]}>
             {item.availableCopies > 0 ? `${item.availableCopies} available` : 'Unavailable'}
           </Text>
         </View>
       </View>
-      <Ionicons name="chevron-forward" size={18} color="#9ca3af" />
+      <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
     </TouchableOpacity>
   );
 
@@ -77,7 +78,7 @@ export default function BooksScreen() {
       </View>
 
       {loading
-        ? <ActivityIndicator style={{ marginTop: 40 }} size="large" color="#1a56db" />
+        ? <ActivityIndicator style={{ marginTop: 40 }} size="large" color={Colors.brand} />
         : (
           <FlatList
             data={books}
@@ -94,29 +95,29 @@ export default function BooksScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f0f4ff' },
+  container: { flex: 1, backgroundColor: Colors.background },
   searchRow: { flexDirection: 'row', padding: 16, gap: 8 },
   searchInput: {
-    flex: 1, backgroundColor: '#fff', borderRadius: 10, padding: 10,
-    borderWidth: 1, borderColor: '#d1d5db', fontSize: 14,
+    flex: 1, backgroundColor: Colors.surface, borderRadius: 10, padding: 10,
+    borderWidth: 1, borderColor: Colors.border, fontSize: 14,
   },
-  searchBtn: { backgroundColor: '#1a56db', borderRadius: 10, padding: 10, justifyContent: 'center' },
+  searchBtn: { backgroundColor: Colors.brand, borderRadius: 10, padding: 10, justifyContent: 'center' },
   list: { paddingHorizontal: 16, paddingBottom: 20 },
   item: {
-    backgroundColor: '#fff', borderRadius: 12, padding: 14, marginBottom: 10,
+    backgroundColor: Colors.surface, borderRadius: 12, padding: 14, marginBottom: 10,
     flexDirection: 'row', alignItems: 'center', gap: 12,
     elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4,
   },
   cover: {
-    width: 52, height: 68, borderRadius: 6, backgroundColor: '#eff6ff',
+    width: 52, height: 68, borderRadius: 6, backgroundColor: Colors.brandLight,
     justifyContent: 'center', alignItems: 'center', overflow: 'hidden',
   },
   coverImg: { width: '100%', height: '100%' },
   info: { flex: 1 },
-  title: { fontSize: 14, fontWeight: '600', color: '#111827', marginBottom: 2 },
-  author: { fontSize: 12, color: '#6b7280', marginBottom: 6 },
+  title: { fontSize: 14, fontWeight: '600', color: Colors.textPrimary, marginBottom: 2 },
+  author: { fontSize: 12, color: Colors.textSecond, marginBottom: 6 },
   row: { flexDirection: 'row', justifyContent: 'space-between' },
-  category: { fontSize: 11, color: '#9ca3af', backgroundColor: '#f3f4f6', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  category: { fontSize: 11, color: Colors.textMuted, backgroundColor: '#f3f4f6', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
   avail: { fontSize: 11, fontWeight: '600' },
-  empty: { textAlign: 'center', marginTop: 40, color: '#9ca3af' },
+  empty: { textAlign: 'center', marginTop: 40, color: Colors.textMuted },
 });

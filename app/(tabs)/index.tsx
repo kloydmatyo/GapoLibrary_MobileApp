@@ -5,9 +5,8 @@ import { useAuth } from '@/context/AuthContext';
 import Colors from '@/constants/colors';
 
 const QUICK_ACTIONS = [
-  { label: 'Browse Books', icon: 'book-outline', route: '/(tabs)/books' },
-  { label: 'My History', icon: 'time-outline', route: '/(tabs)/history' },
-  { label: 'My Profile', icon: 'person-outline', route: '/(tabs)/profile' },
+  { label: 'Programs', icon: 'calendar-outline', route: '/(tabs)/programs' },
+  { label: 'Services', icon: 'construct-outline', route: '/(tabs)/services' },
 ] as const;
 
 export default function HomeScreen() {
@@ -33,13 +32,6 @@ export default function HomeScreen() {
             <Text style={styles.cardLabel}>{action.label}</Text>
           </TouchableOpacity>
         ))}
-      </View>
-
-      <View style={styles.infoCard}>
-        <Ionicons name="information-circle-outline" size={20} color={Colors.brand} />
-        <Text style={styles.infoText}>
-          Visit the library or use the web portal to borrow and return books.
-        </Text>
       </View>
     </ScrollView>
   );

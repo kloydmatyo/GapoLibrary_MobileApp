@@ -7,6 +7,9 @@
     "icon": "./assets/icon.png",
     "scheme": "gapolibrary",
     "userInterfaceStyle": "light",
+    "associatedDomains": [
+      "applinks:your-gapolibrary-app.vercel.app"
+    ],
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",

@@ -45,3 +45,7 @@ export const getHistory = (userId?: string) =>
 // --- Reservations ---
 export const createReservation = (bookId: string) =>
   api.post('/reservations', { bookId });
+
+// --- Email Verification ---
+export const resendVerificationEmail = (email: string) =>
+  api.post('/auth/resend-verification', { email });

@@ -30,7 +30,13 @@ export default function LoginScreen() {
       } else if (err?.message) {
         msg = err.message;
       }
-      Alert.alert('Login Failed', msg);
+      
+      // Check if it's an email verification error
+      if (msg.toLowerCase().includes('verify') || msg.toLowerCase().includes('verification')) {
+        Alert.alert('Email Not Verified', msg + '\n\nPlease check your email inbox for the verification link.');
+      } else {
+        Alert.alert('Login Failed', msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -67,6 +73,12 @@ export default function LoginScreen() {
             <Text style={styles.linkText}>Don't have an account? Register</Text>
           </TouchableOpacity>
         </Link>
+
+        <Link href="/(auth)/resend-verification" asChild>
+          <TouchableOpacity style={styles.link}>
+            <Text style={styles.linkTextSecondary}>Didn't receive verification email?</Text>
+          </TouchableOpacity>
+        </Link>
       </View>
     </KeyboardAvoidingView>
   );
@@ -82,4 +94,5 @@ const styles = StyleSheet.create({
   buttonText: { color: '#fff', fontWeight: '600', fontSize: 16 },
   link: { marginTop: 16, alignItems: 'center' },
   linkText: { color: Colors.brand, fontSize: 14 },
+  linkTextSecondary: { color: Colors.textSecond, fontSize: 13, textDecorationLine: 'underline' },
 });

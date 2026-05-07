@@ -1,9 +1,11 @@
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/context/AuthContext';
 import Colors from '@/constants/colors';
 
 export default function ProfileScreen() {
+  const router = useRouter();
   const { user, signOut } = useAuth();
 
   const handleLogout = () => {
@@ -36,6 +38,14 @@ export default function ProfileScreen() {
         </View>
       </View>
 
+      <TouchableOpacity 
+        style={styles.editBtn} 
+        onPress={() => router.push('/edit-profile')}
+      >
+        <Ionicons name="create-outline" size={20} color={Colors.brand} />
+        <Text style={styles.editText}>Edit Profile</Text>
+      </TouchableOpacity>
+
       <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
         <Ionicons name="log-out-outline" size={20} color={Colors.error} />
         <Text style={styles.logoutText}>Sign Out</Text>
@@ -63,6 +73,11 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   label: { flex: 1, fontSize: 14, color: Colors.textSecond },
   value: { fontSize: 14, fontWeight: '600', color: Colors.textPrimary },
+  editBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    backgroundColor: Colors.brandMuted, borderRadius: 12, padding: 14, marginBottom: 12,
+  },
+  editText: { color: Colors.brand, fontWeight: '600', fontSize: 15 },
   logoutBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
     backgroundColor: Colors.errorBg, borderRadius: 12, padding: 14,

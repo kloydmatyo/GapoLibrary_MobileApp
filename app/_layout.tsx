@@ -1,7 +1,11 @@
 import { useEffect } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
+import { Platform, StatusBar } from 'react-native';
+import * as NavigationBar from 'expo-navigation-bar';
 import * as Linking from 'expo-linking';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { OverdueProvider } from '@/context/OverdueContext';
+import { BookAvailabilityProvider } from '@/context/BookAvailabilityContext';
 
 function RootLayoutNav() {
   const { user, loading } = useAuth();
@@ -41,11 +45,37 @@ function RootLayoutNav() {
     return () => subscription.remove();
   }, [router]);
 
+  // Hide Android navigation bar
+  useEffect(() => {
+    const setupBars = async () => {
+      if (Platform.OS === 'android') {
+        try {
+          // Hide navigation bar completely
+          await NavigationBar.setVisibilityAsync('hidden');
+          
+          // Set behavior: inset-swipe keeps it hidden, overlay-swipe shows temporarily
+          await NavigationBar.setBehaviorAsync('inset-swipe');
+          
+          // Hide status bar completely
+          StatusBar.setHidden(true, 'none');
+          
+          console.log('✅ Navigation bar hidden successfully');
+        } catch (error) {
+          console.error('❌ Navigation bar setup error:', error);
+        }
+      }
+    };
+
+    setupBars();
+  }, []);
+
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="books/[id]" options={{ headerShown: true, title: 'Book Details' }} />
+      <Stack.Screen name="events" options={{ headerShown: false }} />
+      <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
       <Stack.Screen name="verify-email" options={{ headerShown: true, title: 'Email Verification' }} />
     </Stack>
   );
@@ -54,7 +84,11 @@ function RootLayoutNav() {
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <RootLayoutNav />
+      <OverdueProvider>
+        <BookAvailabilityProvider>
+          <RootLayoutNav />
+        </BookAvailabilityProvider>
+      </OverdueProvider>
     </AuthProvider>
   );
 }

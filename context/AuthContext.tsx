@@ -33,13 +33,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     const res = await apiLogin(email, password);
-    const { user: userData } = res.data;
+    const { user: userData, sessionToken } = res.data;
 
-    const sessionToken = res.headers['set-cookie']?.[0]
-      ?.split(';')[0]
-      ?.replace('session=', '') ?? '';
-
-    await SecureStore.setItemAsync('session_token', sessionToken);
+    // Store the session token from response body (not from headers)
+    if (sessionToken) {
+      await SecureStore.setItemAsync('session_token', sessionToken);
+    }
+    
     await SecureStore.setItemAsync('user_data', JSON.stringify(userData));
     setUser(userData);
   };

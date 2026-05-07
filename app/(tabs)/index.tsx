@@ -5,8 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import Colors from '@/constants/colors';
 
 const QUICK_ACTIONS = [
-  { label: 'Programs', icon: 'calendar-outline', route: '/(tabs)/programs' },
-  { label: 'Services', icon: 'construct-outline', route: '/(tabs)/services' },
+  { label: 'Events', icon: 'calendar-outline', route: '/events' },
 ] as const;
 
 export default function HomeScreen() {
@@ -20,19 +19,23 @@ export default function HomeScreen() {
         <Text style={styles.subGreeting}>Welcome to GapoLibrary</Text>
       </View>
 
-      <Text style={styles.sectionTitle}>Quick Actions</Text>
-      <View style={styles.grid}>
-        {QUICK_ACTIONS.map((action) => (
-          <TouchableOpacity
-            key={action.label}
-            style={styles.card}
-            onPress={() => router.push(action.route as any)}
-          >
-            <Ionicons name={action.icon as any} size={32} color={Colors.brand} />
-            <Text style={styles.cardLabel}>{action.label}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      {QUICK_ACTIONS.length > 0 && (
+        <>
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <View style={styles.grid}>
+            {QUICK_ACTIONS.map((action) => (
+              <TouchableOpacity
+                key={action.label}
+                style={styles.card}
+                onPress={() => router.push(action.route as any)}
+              >
+                <Ionicons name={action.icon as any} size={32} color={Colors.brand} />
+                <Text style={styles.cardLabel}>{action.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </>
+      )}
     </ScrollView>
   );
 }

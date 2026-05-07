@@ -1,48 +1,150 @@
-import { Tabs } from 'expo-router';
+import { Tabs, useRouter } from 'expo-router';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Colors from '@/constants/colors';
+import { useOverdue } from '@/context/OverdueContext';
+import CustomHeader from '@/components/CustomHeader';
+
+function HistoryTabIcon({ color, size, focused }: { color: string; size: number; focused: boolean }) {
+  const { overdueCount } = useOverdue();
+
+  return (
+    <View>
+      <Ionicons 
+        name={focused ? "time" : "time-outline"} 
+        size={size} 
+        color={color} />
+      {overdueCount > 0 && (
+        <View style={styles.tabBadge}>
+          <Text style={styles.tabBadgeText}>{overdueCount > 9 ? '9+' : overdueCount}</Text>
+        </View>
+      )}
+    </View>
+  );
+}
 
 export default function TabsLayout() {
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: Colors.brand,
-        tabBarInactiveTintColor: Colors.textMuted,
-        headerStyle: { backgroundColor: Colors.brand },
-        headerTintColor: '#fff',
-        headerTitleStyle: { fontWeight: '700' },
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
+    <>
+      <Tabs
+        screenOptions={{
+          tabBarActiveTintColor: '#16a34a',
+          tabBarInactiveTintColor: '#9ca3af',
+          tabBarStyle: {
+            height: Platform.OS === 'ios' ? 88 : 68,
+            paddingBottom: Platform.OS === 'ios' ? 28 : 12,
+            paddingTop: 8,
+            backgroundColor: '#f0fdf4',
+            borderTopWidth: 0,
+            elevation: 0,
+          },
+          tabBarLabelStyle: {
+            fontSize: 11,
+            fontWeight: '600',
+          },
+          headerShown: true,
+          header: () => <CustomHeader messageCount={5} />,
         }}
-      />
-      <Tabs.Screen
-        name="books"
-        options={{
-          title: 'Books',
-          tabBarIcon: ({ color, size }) => <Ionicons name="book-outline" size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="history"
-        options={{
-          title: 'History',
-          tabBarIcon: ({ color, size }) => <Ionicons name="time-outline" size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'Profile',
-          tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen name="programs" options={{ href: null }} />
-      <Tabs.Screen name="services" options={{ href: null }} />
-    </Tabs>
+      >
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: 'Home',
+            tabBarIcon: ({ color, size, focused }) => (
+              <Ionicons name={focused ? "home" : "home-outline"} size={size} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="ebooks"
+          options={{
+            title: 'eBooks',
+            tabBarIcon: ({ color, size, focused }) => (
+              <Ionicons name={focused ? "reader" : "reader-outline"} size={size} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="books"
+          options={{
+            title: 'Catalog',
+            tabBarIcon: ({ color, size, focused }) => (
+              <Ionicons name={focused ? "book" : "book-outline"} size={size} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="reservations"
+          options={{
+            title: 'Reserved',
+            tabBarIcon: ({ color, size, focused }) => (
+              <Ionicons name={focused ? "calendar" : "calendar-outline"} size={size} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="history"
+          options={{
+            title: 'Borrowed',
+            tabBarIcon: ({ color, size, focused }) => (
+              <HistoryTabIcon color={color} size={size} focused={focused} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="profile"
+          options={{
+            title: 'Profile',
+            tabBarIcon: ({ color, size, focused }) => (
+              <Ionicons name={focused ? "person" : "person-outline"} size={size} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="programs"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="services"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="notifications"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="placeholder"
+          options={{
+            href: null,
+          }}
+        />
+      </Tabs>
+    </>
   );
 }
+
+const styles = StyleSheet.create({
+  tabBadge: {
+    position: 'absolute',
+    right: -8,
+    top: -4,
+    backgroundColor: '#dc2626',
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  tabBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+});

@@ -24,11 +24,17 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1a56db"
       },
-      "package": "com.gapolibrary.mobile"
+      "package": "com.gapolibrary.mobile",
+      "userInterfaceStyle": "light",
+      "softwareKeyboardLayoutMode": "pan",
+      "statusBar": {
+        "hidden": true
+      }
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-navigation-bar"
     ],
     "experiments": {
       "typedRoutes": true

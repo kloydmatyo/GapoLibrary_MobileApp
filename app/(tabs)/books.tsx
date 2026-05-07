@@ -41,6 +41,7 @@ export default function BooksScreen() {
   const [allBooks, setAllBooks] = useState<Book[]>([]);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [availableOnly, setAvailableOnly] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -79,7 +80,9 @@ export default function BooksScreen() {
       book.title.toLowerCase().includes(search.toLowerCase()) ||
       book.author.toLowerCase().includes(search.toLowerCase());
     const matchesCategory = selectedCategory === 'All' || book.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+    const realtimeCopies = availability[book._id]?.availableCopies ?? book.availableCopies;
+    const matchesAvailability = !availableOnly || realtimeCopies > 0;
+    return matchesSearch && matchesCategory && matchesAvailability;
   });
 
   const renderItem = ({ item }: { item: Book }) => {
@@ -130,6 +133,31 @@ export default function BooksScreen() {
         {search.length > 0 && (
           <TouchableOpacity onPress={() => setSearch('')}>
             <Ionicons name="close-circle" size={18} color={Colors.textMuted} />
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* Availability toggle */}
+      <View style={styles.filterRow}>
+        <TouchableOpacity
+          style={[styles.availToggle, availableOnly && styles.availToggleActive]}
+          onPress={() => setAvailableOnly((v) => !v)}
+        >
+          <Ionicons
+            name={availableOnly ? 'checkmark-circle' : 'ellipse-outline'}
+            size={16}
+            color={availableOnly ? '#fff' : Colors.textSecond}
+          />
+          <Text style={[styles.availToggleText, availableOnly && styles.availToggleTextActive]}>
+            Available only
+          </Text>
+        </TouchableOpacity>
+        {(search || selectedCategory !== 'All' || availableOnly) && (
+          <TouchableOpacity
+            style={styles.clearBtn}
+            onPress={() => { setSearch(''); setSelectedCategory('All'); setAvailableOnly(false); }}
+          >
+            <Text style={styles.clearBtnText}>Clear filters</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -198,6 +226,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.textPrimary,
   },
+  filterRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingBottom: 8, gap: 8,
+  },
+  availToggle: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20,
+    borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface,
+    height: 34,
+  },
+  availToggleActive: {
+    backgroundColor: Colors.brand, borderColor: Colors.brand,
+  },
+  availToggleText: { fontSize: 13, fontWeight: '600', color: Colors.textSecond },
+  availToggleTextActive: { color: '#fff' },
+  clearBtn: { paddingHorizontal: 10, paddingVertical: 6 },
+  clearBtnText: { fontSize: 12, fontWeight: '600', color: Colors.brand },
   chipsScrollView: {
     flexGrow: 0,
     flexShrink: 0,

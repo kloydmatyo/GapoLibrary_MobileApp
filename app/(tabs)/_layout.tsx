@@ -1,5 +1,5 @@
-import { Tabs, useRouter } from 'expo-router';
-import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { Tabs } from 'expo-router';
+import { View, Text, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Colors from '@/constants/colors';
 import { useOverdue } from '@/context/OverdueContext';

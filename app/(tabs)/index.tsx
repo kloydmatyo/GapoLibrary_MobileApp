@@ -29,10 +29,10 @@ interface BookItem {
 }
 
 const QUICK_ACTIONS = [
-  { label: 'Catalog',      icon: 'book-outline',             route: '/(tabs)/books'         },
-  { label: 'eBooks',       icon: 'reader-outline',           route: '/(tabs)/ebooks'        },
-  { label: 'Events',       icon: 'calendar-outline',         route: '/events'               },
-  { label: 'AI Assistant', icon: 'chatbubble-ellipses-outline', route: '/chat'              },
+  { label: 'Catalog',          icon: 'book-outline',    route: '/(tabs)/books' },
+  { label: 'eBooks',           icon: 'reader-outline',  route: '/(tabs)/ebooks' },
+  { label: 'Events',           icon: 'calendar-outline', route: '/events' },
+  { label: 'Rate Librarian',   icon: 'star-outline',    route: '/rate' },
 ] as const;
 
 function fmt(iso: string) {

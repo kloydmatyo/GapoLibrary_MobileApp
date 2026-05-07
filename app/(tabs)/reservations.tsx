@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { getHistory, getReservations, cancelReservation } from '@/lib/api';
+import { getHistory, getReservations, cancelReservation, getBook } from '@/lib/api';
 import Colors from '@/constants/colors';
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -243,8 +243,20 @@ export default function ReservationsScreen() {
         getHistory(),
       ]);
 
-      // Queue reservations — status === 'pending'
-      setQueueItems(queueRes.data.reservations ?? []);
+      // Enrich queue reservations with book details
+      const rawReservations: QueueReservation[] = queueRes.data.reservations ?? [];
+      const enriched = await Promise.all(
+        rawReservations.map(async (r) => {
+          try {
+            const bookRes = await getBook(r.bookId);
+            const book = bookRes.data.book;
+            return { ...r, bookTitle: book?.title ?? 'Unknown', bookAuthor: book?.author ?? '' };
+          } catch {
+            return { ...r, bookTitle: 'Unknown', bookAuthor: '' };
+          }
+        })
+      );
+      setQueueItems(enriched);
 
       // Circulation items — pending_pickup, active (picked up), expired
       const filtered = (historyRes.data.history ?? []).filter(

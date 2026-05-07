@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, RefreshControl, Alert, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, StyleSheet, ActivityIndicator, RefreshControl, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getHistory } from '@/lib/api';
 import Colors from '@/constants/colors';
@@ -13,6 +13,8 @@ interface HistoryItem {
   dueDate: string;
   returnDate?: string;
   status: 'pending_pickup' | 'active' | 'returned' | 'overdue' | 'expired';
+  confirmedBy?: string | null;
+  returnedTo?: string | null;
 }
 
 const STATUS_CONFIG = {
@@ -62,14 +64,6 @@ export default function HistoryScreen() {
       setOverdueCount(overdue);
 
       await refreshOverdueCount();
-
-      if (overdue > 0 && !refreshing) {
-        Alert.alert(
-          '⚠️ Overdue Books',
-          `You have ${overdue} overdue book${overdue > 1 ? 's' : ''}. Please return ${overdue > 1 ? 'them' : 'it'} to the library as soon as possible.`,
-          [{ text: 'OK' }]
-        );
-      }
     } catch (err) {
       console.error('Failed to fetch history:', err);
     } finally {
@@ -122,6 +116,16 @@ export default function HistoryScreen() {
             {isOverdue && ` (${daysOverdue} day${daysOverdue > 1 ? 's' : ''} overdue)`}
           </Text>
           {item.returnDate && <Text style={styles.date}>Returned: {fmt(item.returnDate)}</Text>}
+          {item.confirmedBy && (
+            <Text style={styles.staffInfo}>
+              <Text style={styles.staffLabel}>Pickup confirmed by: </Text>{item.confirmedBy}
+            </Text>
+          )}
+          {item.returnedTo && (
+            <Text style={styles.staffInfo}>
+              <Text style={styles.staffLabel}>Returned to: </Text>{item.returnedTo}
+            </Text>
+          )}
         </View>
         <View style={[styles.badge, { backgroundColor: cfg.bg }]}>
           <Text style={[styles.badgeText, { color: cfg.color }]}>{cfg.label}</Text>
@@ -266,6 +270,8 @@ const styles = StyleSheet.create({
   author: { fontSize: 12, color: Colors.textSecond, marginBottom: 4 },
   date: { fontSize: 11, color: Colors.textMuted },
   overdueDate: { color: Colors.error, fontWeight: '600' },
+  staffInfo: { fontSize: 11, color: Colors.textMuted, marginTop: 2 },
+  staffLabel: { fontWeight: '600', color: Colors.textSecond },
   badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, alignSelf: 'flex-start' },
   badgeText: { fontSize: 11, fontWeight: '600' },
   emptyWrap: { alignItems: 'center', marginTop: 60 },

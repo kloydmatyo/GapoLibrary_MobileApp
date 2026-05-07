@@ -1,12 +1,24 @@
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Image } from 'react-native';
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/context/AuthContext';
+import api from '@/lib/api';
 import Colors from '@/constants/colors';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const { user, signOut } = useAuth();
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+
+  // Reload image every time the tab is focused (e.g. after updating in Settings)
+  useFocusEffect(
+    useCallback(() => {
+      api.get('/user/profile')
+        .then((res) => setProfileImage(res.data.user?.profileImage || null))
+        .catch(() => {});
+    }, [])
+  );
 
   const handleLogout = () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
@@ -20,9 +32,13 @@ export default function ProfileScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.avatarWrap}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{user?.name?.charAt(0).toUpperCase()}</Text>
-        </View>
+        {profileImage ? (
+          <Image source={{ uri: profileImage }} style={styles.avatarImg} />
+        ) : (
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>{user?.name?.charAt(0).toUpperCase()}</Text>
+          </View>
+        )}
         <Text style={styles.name}>{user?.name}</Text>
         <Text style={styles.email}>{user?.email}</Text>
         <View style={styles.roleBadge}>
@@ -40,26 +56,10 @@ export default function ProfileScreen() {
 
       <TouchableOpacity 
         style={styles.editBtn} 
-        onPress={() => router.push('/edit-profile')}
-      >
-        <Ionicons name="create-outline" size={20} color={Colors.brand} />
-        <Text style={styles.editText}>Edit Profile</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.editBtn}
-        onPress={() => router.push('/preferences')}
+        onPress={() => router.push('/settings')}
       >
         <Ionicons name="settings-outline" size={20} color={Colors.brand} />
-        <Text style={styles.editText}>Notification Preferences</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.chatBtn}
-        onPress={() => router.push('/chat')}
-      >
-        <Ionicons name="chatbubble-ellipses-outline" size={20} color="#7c3aed" />
-        <Text style={styles.chatText}>AI Assistant</Text>
+        <Text style={styles.editText}>Settings</Text>
       </TouchableOpacity>
 
       <TouchableOpacity 
@@ -85,6 +85,7 @@ const styles = StyleSheet.create({
     width: 80, height: 80, borderRadius: 40, backgroundColor: Colors.brand,
     justifyContent: 'center', alignItems: 'center', marginBottom: 12,
   },
+  avatarImg: { width: 80, height: 80, borderRadius: 40, marginBottom: 12 },
   avatarText: { fontSize: 32, fontWeight: '700', color: '#fff' },
   name: { fontSize: 20, fontWeight: '700', color: Colors.textPrimary },
   email: { fontSize: 14, color: Colors.textSecond, marginTop: 2 },

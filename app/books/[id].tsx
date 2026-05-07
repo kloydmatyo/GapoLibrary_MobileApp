@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { getBook, getHistory, toggleBookmark, getBookmarks } from '@/lib/api';
+import { getBook, getHistory, toggleBookmark, getBookmarks, getReservations } from '@/lib/api';
 import { useBookAvailability } from '@/context/BookAvailabilityContext';
 import Colors from '@/constants/colors';
 
@@ -33,16 +33,18 @@ export default function BookDetailScreen() {
   const [book, setBook] = useState<Book | null>(null);
   const [loading, setLoading] = useState(true);
   const [alreadyBorrowed, setAlreadyBorrowed] = useState(false);
+  const [alreadyQueued, setAlreadyQueued] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
 
   useEffect(() => {
     const loadBook = async () => {
       try {
-        const [bookRes, historyRes, bookmarkIds] = await Promise.all([
+        const [bookRes, historyRes, bookmarkIds, reservationsRes] = await Promise.all([
           getBook(id),
           getHistory(),
           getBookmarks(),
+          getReservations(),
         ]);
         setBook(bookRes.data.book);
         await updateBookAvailability(id);
@@ -52,6 +54,12 @@ export default function BookDetailScreen() {
         );
         setAlreadyBorrowed(active.some((h: any) => h.bookId === id));
         setBookmarked(bookmarkIds.includes(id));
+
+        // Check if already in queue for this book
+        const queued = (reservationsRes.data.reservations ?? []).some(
+          (r: any) => r.bookId === id && r.status === 'pending'
+        );
+        setAlreadyQueued(queued);
       } catch {
         Alert.alert('Error', 'Could not load book details.');
       } finally {
@@ -199,6 +207,11 @@ export default function BookDetailScreen() {
               <Text style={styles.actionBtnText}>Borrow This Book</Text>
             </TouchableOpacity>
           </>
+        ) : alreadyQueued ? (
+          <View style={[styles.joinQueueBtn, styles.disabledBtn]}>
+            <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
+            <Text style={styles.actionBtnText}>Already in Queue</Text>
+          </View>
         ) : (
           <>
             <View style={styles.queueHint}>

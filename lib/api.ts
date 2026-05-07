@@ -62,6 +62,13 @@ export const toggleBookmark = (bookId: string) =>
 export const getBookmarks = () =>
   api.get('/user/preferences').then((res) => res.data.bookmarks as string[]);
 
+// --- Profile Image ---
+export const uploadProfileImage = (mongoId: string, base64Image: string) =>
+  api.post(`/patrons/${mongoId}/image`, { image: base64Image });
+
+export const deleteProfileImage = (mongoId: string) =>
+  api.delete(`/patrons/${mongoId}/image`);
+
 // --- Chat ---
 export const sendChatMessage = (message: string, conversationHistory: { role: string; content: string }[], sessionId?: string) =>
   api.post('/chat', { message, conversationHistory, sessionId });

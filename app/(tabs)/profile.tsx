@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert, Image } from 'react-na
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/context/AuthContext';
 import api from '@/lib/api';
 import Colors from '@/constants/colors';
@@ -35,9 +36,9 @@ export default function ProfileScreen() {
         {profileImage ? (
           <Image source={{ uri: profileImage }} style={styles.avatarImg} />
         ) : (
-          <View style={styles.avatar}>
+          <LinearGradient colors={['#2e7d32', '#15803d']} style={styles.avatar}>
             <Text style={styles.avatarText}>{user?.name?.charAt(0).toUpperCase()}</Text>
-          </View>
+          </LinearGradient>
         )}
         <Text style={styles.name}>{user?.name}</Text>
         <Text style={styles.email}>{user?.email}</Text>
@@ -80,42 +81,44 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background, padding: 24 },
-  avatarWrap: { alignItems: 'center', marginBottom: 28 },
   avatar: {
-    width: 80, height: 80, borderRadius: 40, backgroundColor: Colors.brand,
+    width: 80, height: 80, borderRadius: 40,
     justifyContent: 'center', alignItems: 'center', marginBottom: 12,
+    elevation: 6, shadowColor: '#2e7d32', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 },
   },
   avatarImg: { width: 80, height: 80, borderRadius: 40, marginBottom: 12 },
-  avatarText: { fontSize: 32, fontWeight: '700', color: '#fff' },
-  name: { fontSize: 20, fontWeight: '700', color: Colors.textPrimary },
-  email: { fontSize: 14, color: Colors.textSecond, marginTop: 2 },
-  roleBadge: { marginTop: 8, backgroundColor: Colors.brandLight, paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20 },
-  roleText: { color: Colors.brand, fontSize: 12, fontWeight: '600' },
+  avatarText: { fontSize: 32, fontWeight: '800', color: '#fff' },
+  name: { fontSize: 20, fontWeight: '900', color: Colors.textPrimary },
+  email: { fontSize: 14, color: Colors.textSecond, marginTop: 2, fontWeight: '500' },
+  roleBadge: { marginTop: 8, backgroundColor: Colors.brandMuted, paddingHorizontal: 14, paddingVertical: 5, borderRadius: 20 },
+  roleText: { color: Colors.brandDarker, fontSize: 12, fontWeight: '800', letterSpacing: 0.3 },
   card: {
-    backgroundColor: Colors.surface, borderRadius: 14, padding: 16, marginBottom: 16,
-    elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4,
+    backgroundColor: Colors.surface, borderRadius: 20, padding: 16, marginBottom: 16,
+    elevation: 4, shadowColor: Colors.shadow, shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 4 },
   },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  label: { flex: 1, fontSize: 14, color: Colors.textSecond },
-  value: { fontSize: 14, fontWeight: '600', color: Colors.textPrimary },
+  label: { flex: 1, fontSize: 14, color: Colors.textSecond, fontWeight: '600' },
+  value: { fontSize: 14, fontWeight: '700', color: Colors.textPrimary },
   editBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    backgroundColor: Colors.brandMuted, borderRadius: 12, padding: 14, marginBottom: 12,
+    backgroundColor: Colors.brandMuted, borderRadius: 14, padding: 14, marginBottom: 12,
+    elevation: 2, shadowColor: Colors.brand, shadowOpacity: 0.15, shadowRadius: 6, shadowOffset: { width: 0, height: 3 },
   },
-  editText: { color: Colors.brand, fontWeight: '600', fontSize: 15 },
+  editText: { color: Colors.brandDarker, fontWeight: '800', fontSize: 15 },
   rateBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    backgroundColor: '#fef3c7', borderRadius: 12, padding: 14, marginBottom: 12,
+    backgroundColor: '#fef3c7', borderRadius: 14, padding: 14, marginBottom: 12,
+    elevation: 2, shadowColor: '#f59e0b', shadowOpacity: 0.15, shadowRadius: 6, shadowOffset: { width: 0, height: 3 },
   },
-  rateText: { color: '#d97706', fontWeight: '600', fontSize: 15 },
+  rateText: { color: '#d97706', fontWeight: '800', fontSize: 15 },
   chatBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    backgroundColor: '#f5f3ff', borderRadius: 12, padding: 14, marginBottom: 12,
+    backgroundColor: '#f5f3ff', borderRadius: 14, padding: 14, marginBottom: 12,
   },
-  chatText: { color: '#7c3aed', fontWeight: '600', fontSize: 15 },
+  chatText: { color: '#7c3aed', fontWeight: '800', fontSize: 15 },
   logoutBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    backgroundColor: Colors.errorBg, borderRadius: 12, padding: 14,
+    backgroundColor: Colors.errorBg, borderRadius: 14, padding: 14,
   },
-  logoutText: { color: Colors.error, fontWeight: '600', fontSize: 15 },
+  logoutText: { color: Colors.error, fontWeight: '800', fontSize: 15 },
 });

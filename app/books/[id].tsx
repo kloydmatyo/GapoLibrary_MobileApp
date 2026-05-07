@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { getBook, getHistory, toggleBookmark, getBookmarks, getReservations } from '@/lib/api';
 import { useBookAvailability } from '@/context/BookAvailabilityContext';
 import Colors from '@/constants/colors';
@@ -127,7 +128,11 @@ export default function BookDetailScreen() {
         <View style={styles.coverWrap}>
           {book.coverImageUrl
             ? <Image source={{ uri: book.coverImageUrl }} style={styles.cover} resizeMode="cover" />
-            : <Ionicons name="book" size={64} color={Colors.brand} />}
+            : (
+              <LinearGradient colors={['#2e7d32', '#15803d']} style={styles.coverPlaceholder}>
+                <Ionicons name="book" size={64} color="rgba(255,255,255,0.7)" />
+              </LinearGradient>
+            )}
         </View>
 
         <Text style={styles.title}>{book.title}</Text>
@@ -151,7 +156,7 @@ export default function BookDetailScreen() {
             </View>
           )}
           {([
-            ['Available Copies', `${availableCopies} / ${totalCopies}`],
+            book.isEbook ? null : ['Available Copies', `${availableCopies} / ${totalCopies}`],
             book.isbn ? ['ISBN', book.isbn] : null,
             book.publisher ? ['Publisher', book.publisher] : null,
             book.publicationYear ? ['Year', String(book.publicationYear)] : null,
@@ -262,56 +267,62 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   content: { padding: 20 },
   coverWrap: {
-    width: 120, height: 160, borderRadius: 10, backgroundColor: Colors.brandLight,
+    width: 130, height: 175, borderRadius: 16, backgroundColor: Colors.brandLight,
     justifyContent: 'center', alignItems: 'center', alignSelf: 'center',
-    marginBottom: 16, overflow: 'hidden', elevation: 4,
+    marginBottom: 16, overflow: 'hidden',
+    elevation: 8, shadowColor: '#2e7d32', shadowOpacity: 0.3, shadowRadius: 16, shadowOffset: { width: 0, height: 8 },
   },
   cover: { width: '100%', height: '100%' },
-  title: { fontSize: 20, fontWeight: '700', color: Colors.textPrimary, textAlign: 'center', marginBottom: 4 },
-  author: { fontSize: 14, color: Colors.textSecond, textAlign: 'center', marginBottom: 12 },
+  coverPlaceholder: { width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' },
+  title: { fontSize: 22, fontWeight: '900', color: Colors.textPrimary, textAlign: 'center', marginBottom: 4 },
+  author: { fontSize: 14, color: Colors.textSecond, textAlign: 'center', marginBottom: 12, fontWeight: '600' },
   badges: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginBottom: 16 },
-  badge: { backgroundColor: Colors.brandLight, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
-  badgeText: { fontSize: 12, color: Colors.brand, fontWeight: '600' },
+  badge: { backgroundColor: Colors.brandMuted, paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20 },
+  badgeText: { fontSize: 12, color: Colors.brandDarker, fontWeight: '800' },
   card: {
-    backgroundColor: Colors.surface, borderRadius: 14, padding: 16, marginBottom: 12,
-    elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4,
+    backgroundColor: Colors.surface, borderRadius: 20, padding: 16, marginBottom: 12,
+    elevation: 4, shadowColor: Colors.shadow, shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 4 },
   },
   liveStatus: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingBottom: 12, marginBottom: 8, borderBottomWidth: 1, borderBottomColor: '#f3f4f6',
+    paddingBottom: 12, marginBottom: 8, borderBottomWidth: 1, borderBottomColor: Colors.border,
   },
   liveDotLarge: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.brand },
-  liveText: { fontSize: 12, fontWeight: '600', color: Colors.brand },
-  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
-  label: { fontSize: 13, color: Colors.textSecond },
-  value: { fontSize: 13, color: Colors.textPrimary, fontWeight: '500' },
-  descCard: { backgroundColor: Colors.surface, borderRadius: 14, padding: 16, marginBottom: 16, elevation: 2 },
-  descTitle: { fontSize: 14, fontWeight: '700', color: Colors.textPrimary, marginBottom: 8 },
+  liveText: { fontSize: 12, fontWeight: '700', color: Colors.brand },
+  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: Colors.border },
+  label: { fontSize: 13, color: Colors.textSecond, fontWeight: '600' },
+  value: { fontSize: 13, color: Colors.textPrimary, fontWeight: '700' },
+  descCard: { backgroundColor: Colors.surface, borderRadius: 20, padding: 16, marginBottom: 16,
+    elevation: 4, shadowColor: Colors.shadow, shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },
+  descTitle: { fontSize: 14, fontWeight: '800', color: Colors.textPrimary, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
   desc: { fontSize: 13, color: '#4b5563', lineHeight: 20 },
   readOnlineBtn: {
-    backgroundColor: Colors.brand, borderRadius: 12, padding: 16, alignItems: 'center',
+    backgroundColor: Colors.brandDarker, borderRadius: 14, padding: 16, alignItems: 'center',
     marginBottom: 20, flexDirection: 'row', justifyContent: 'center', gap: 8,
+    elevation: 5, shadowColor: '#2e7d32', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 },
   },
-  readOnlineText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  readOnlineText: { color: '#fff', fontWeight: '800', fontSize: 16 },
   borrowHint: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 8,
-    backgroundColor: Colors.brandMuted, borderRadius: 10, padding: 12, marginBottom: 12,
+    backgroundColor: Colors.brandMuted, borderRadius: 14, padding: 12, marginBottom: 12,
   },
-  borrowHintText: { flex: 1, fontSize: 13, color: Colors.brandDark, lineHeight: 18 },
+  borrowHintText: { flex: 1, fontSize: 13, color: Colors.brandDark, lineHeight: 18, fontWeight: '600' },
   queueHint: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 8,
-    backgroundColor: '#fef3c7', borderRadius: 10, padding: 12, marginBottom: 12,
+    backgroundColor: '#fef3c7', borderRadius: 14, padding: 12, marginBottom: 12,
   },
-  queueHintText: { flex: 1, fontSize: 13, color: '#92400e', lineHeight: 18 },
+  queueHintText: { flex: 1, fontSize: 13, color: '#92400e', lineHeight: 18, fontWeight: '600' },
   actionBtn: {
-    backgroundColor: Colors.brand, borderRadius: 12, padding: 16,
+    backgroundColor: Colors.brandDarker, borderRadius: 14, padding: 16,
     alignItems: 'center', marginBottom: 20, flexDirection: 'row', justifyContent: 'center', gap: 8,
+    elevation: 5, shadowColor: '#2e7d32', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 },
   },
   joinQueueBtn: {
-    backgroundColor: '#f59e0b', borderRadius: 12, padding: 16,
+    backgroundColor: '#f59e0b', borderRadius: 14, padding: 16,
     alignItems: 'center', marginBottom: 20, flexDirection: 'row', justifyContent: 'center', gap: 8,
+    elevation: 5, shadowColor: '#f59e0b', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 },
   },
-  actionBtnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
-  disabledBtn: { backgroundColor: Colors.textMuted },
+  actionBtnText: { color: '#fff', fontWeight: '800', fontSize: 16 },
+  disabledBtn: { backgroundColor: Colors.textMuted, elevation: 0, shadowOpacity: 0 },
   empty: { textAlign: 'center', marginTop: 60, color: Colors.textMuted },
 });

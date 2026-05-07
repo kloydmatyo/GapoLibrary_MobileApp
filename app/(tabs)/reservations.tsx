@@ -398,7 +398,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 8,
     marginBottom: 10, marginTop: 4,
   },
-  sectionHeaderText: { fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  sectionHeaderText: { fontSize: 13, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.6 },
   sectionCount: {
     paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10,
   },
@@ -406,10 +406,9 @@ const styles = StyleSheet.create({
 
   // Shared card base
   card: {
-    backgroundColor: Colors.surface, borderRadius: 16, marginBottom: 16,
-    overflow: 'hidden', elevation: 2,
-    shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
+    backgroundColor: Colors.surface, borderRadius: 20, marginBottom: 16,
+    overflow: 'hidden', elevation: 5,
+    shadowColor: Colors.shadow, shadowOpacity: 0.10, shadowRadius: 10, shadowOffset: { width: 0, height: 5 },
   },
 
   // Queue card specifics
@@ -460,8 +459,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.brandMuted, justifyContent: 'center', alignItems: 'center',
   },
   bookDetails: { flex: 1 },
-  bookTitle: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary, marginBottom: 4 },
-  bookAuthor: { fontSize: 14, color: Colors.textSecond },
+  bookTitle: { fontSize: 16, fontWeight: '800', color: Colors.textPrimary, marginBottom: 4 },
+  bookAuthor: { fontSize: 14, color: Colors.textSecond, fontWeight: '600' },
 
   // Timeline
   timeline: { paddingHorizontal: 16, paddingBottom: 16 },
@@ -489,8 +488,9 @@ const styles = StyleSheet.create({
   emptyTitle: { fontSize: 18, fontWeight: '700', color: Colors.textPrimary, marginTop: 16, marginBottom: 8 },
   emptyText: { fontSize: 14, color: Colors.textMuted, textAlign: 'center', lineHeight: 20, marginBottom: 24 },
   browseBtn: {
-    backgroundColor: Colors.brand, borderRadius: 12,
-    paddingVertical: 12, paddingHorizontal: 28,
+    backgroundColor: Colors.brandDarker, borderRadius: 14,
+    paddingVertical: 14, paddingHorizontal: 28,
+    elevation: 4, shadowColor: '#2e7d32', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 },
   },
-  browseBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  browseBtnText: { color: '#fff', fontSize: 14, fontWeight: '800' },
 });

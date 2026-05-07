@@ -13,15 +13,16 @@ const Colors = {
     900: '#14532d',
   },
   // Semantic aliases
-  brand:       '#16a34a', // primary-600 — main brand color (buttons, headers, icons)
-  brandLight:  '#f0fdf4', // primary-50  — light tinted backgrounds
-  brandMuted:  '#dcfce7', // primary-100 — subtle tints (badges, icon wraps)
-  brandDark:   '#15803d', // primary-700 — pressed states / dark accents
+  brand:       '#16a34a',
+  brandDarker: '#2e7d32', // richer green used on web for gradients/buttons
+  brandLight:  '#f0fdf4',
+  brandMuted:  '#dcfce7',
+  brandDark:   '#15803d',
 
-  // Neutrals (unchanged)
-  background:  '#f0fdf4', // page background (was #f0f4ff)
+  // Neutrals
+  background:  '#f0fdf4',
   surface:     '#ffffff',
-  border:      '#d1d5db',
+  border:      '#e5e7eb', // slightly softer than before
   textPrimary: '#111827',
   textSecond:  '#6b7280',
   textMuted:   '#9ca3af',
@@ -32,6 +33,9 @@ const Colors = {
   errorBg:     '#fef2f2',
   warning:     '#854d0e',
   warningBg:   '#fef9c3',
+
+  // Shadow helpers (used in elevation styles)
+  shadow: '#000',
 };
 
 export default Colors;

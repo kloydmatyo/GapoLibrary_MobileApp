@@ -5,9 +5,11 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/context/AuthContext';
 import { getHistory, getBooks, getPreferences } from '@/lib/api';
 import Colors from '@/constants/colors';
+import ChatModal from '@/components/ChatModal';
 
 interface LoanItem {
   _id: string;
@@ -29,10 +31,10 @@ interface BookItem {
 }
 
 const QUICK_ACTIONS = [
-  { label: 'Catalog',          icon: 'book-outline',    route: '/(tabs)/books' },
-  { label: 'eBooks',           icon: 'reader-outline',  route: '/(tabs)/ebooks' },
-  { label: 'Events',           icon: 'calendar-outline', route: '/events' },
-  { label: 'Rate Librarian',   icon: 'star-outline',    route: '/rate' },
+  { label: 'Catalog',        icon: 'book-outline',    route: '/(tabs)/books' as const },
+  { label: 'eBooks',         icon: 'reader-outline',  route: '/(tabs)/ebooks' as const },
+  { label: 'Events',         icon: 'calendar-outline', route: '/events' as const },
+  { label: 'Rate Librarian', icon: 'star-outline',    route: '/rate' as const },
 ] as const;
 
 function fmt(iso: string) {
@@ -52,6 +54,7 @@ export default function HomeScreen() {
   const [stats, setStats] = useState({ active: 0, overdue: 0, returned: 0 });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -108,15 +111,20 @@ export default function HomeScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.brand]} />}
       >
         {/* Hero */}
-        <View style={styles.hero}>
+        <LinearGradient
+          colors={['#2e7d32', '#16a34a', '#15803d']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.hero}
+        >
           <View>
             <Text style={styles.greeting}>Hello, {user?.name?.split(' ')[0]} 👋</Text>
             <Text style={styles.subGreeting}>Welcome to GapoLibrary</Text>
           </View>
-          <TouchableOpacity style={styles.chatFabInline} onPress={() => router.push('/chat' as any)}>
+          <TouchableOpacity style={styles.chatFabInline} onPress={() => setChatOpen(true)}>
             <Ionicons name="chatbubble-ellipses" size={22} color="#fff" />
           </TouchableOpacity>
-        </View>
+        </LinearGradient>
 
         {/* Stats row */}
         <View style={styles.statsRow}>
@@ -211,7 +219,11 @@ export default function HomeScreen() {
                     {book.coverImageUrl ? (
                       <Image source={{ uri: book.coverImageUrl }} style={styles.bookCoverImg} />
                     ) : (
-                      <Ionicons name="book" size={32} color={Colors.brand} />
+                      <LinearGradient colors={['#2e7d32', '#15803d']} style={styles.bookCoverImg}>
+                        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                          <Ionicons name="book" size={36} color="rgba(255,255,255,0.7)" />
+                        </View>
+                      </LinearGradient>
                     )}
                     {book.isEbook && (
                       <View style={styles.ebookBadge}>
@@ -223,13 +235,13 @@ export default function HomeScreen() {
                   <Text style={styles.bookAuthor} numberOfLines={1}>{book.author}</Text>
                   <View style={[
                     styles.availBadge,
-                    { backgroundColor: book.availableCopies > 0 ? Colors.brandLight : Colors.errorBg },
+                    { backgroundColor: book.isEbook ? Colors.brandMuted : book.availableCopies > 0 ? Colors.brandLight : Colors.errorBg },
                   ]}>
                     <Text style={[
                       styles.availText,
-                      { color: book.availableCopies > 0 ? Colors.brand : Colors.error },
+                      { color: book.isEbook ? Colors.brandDarker : book.availableCopies > 0 ? Colors.brand : Colors.error },
                     ]}>
-                      {book.availableCopies > 0 ? `${book.availableCopies} available` : 'Unavailable'}
+                      {book.isEbook ? 'Always available' : book.availableCopies > 0 ? `${book.availableCopies} available` : 'Unavailable'}
                     </Text>
                   </View>
                 </TouchableOpacity>
@@ -242,9 +254,11 @@ export default function HomeScreen() {
       </ScrollView>
 
       {/* Floating chat button */}
-      <TouchableOpacity style={styles.fab} onPress={() => router.push('/chat' as any)}>
+      <TouchableOpacity style={styles.fab} onPress={() => setChatOpen(true)}>
         <Ionicons name="chatbubble-ellipses" size={24} color="#fff" />
       </TouchableOpacity>
+
+      <ChatModal visible={chatOpen} onClose={() => setChatOpen(false)} />
     </View>
   );
 }
@@ -279,17 +293,18 @@ const statStyles = StyleSheet.create({
   card: {
     flex: 1,
     backgroundColor: Colors.surface,
-    borderRadius: 14,
-    paddingVertical: 12,
+    borderRadius: 20,
+    paddingVertical: 14,
     paddingHorizontal: 8,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
     height: 80,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
+    elevation: 4,
+    shadowColor: Colors.shadow,
+    shadowOpacity: 0.10,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
     borderWidth: 1,
     borderColor: 'transparent',
   },
@@ -297,15 +312,15 @@ const statStyles = StyleSheet.create({
     backgroundColor: Colors.errorBg,
     borderColor: Colors.error,
   },
-  value: { fontSize: 20, fontWeight: '800' },
-  label: { fontSize: 11, color: Colors.textSecond, fontWeight: '600', textAlign: 'center' },
+  value: { fontSize: 22, fontWeight: '900' },
+  label: { fontSize: 11, color: Colors.textSecond, fontWeight: '700', textAlign: 'center', letterSpacing: 0.3 },
 });
 
 const sectionStyles = StyleSheet.create({
   wrap: { marginBottom: 24 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  title: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary },
-  seeAll: { fontSize: 13, fontWeight: '600', color: Colors.brand },
+  title: { fontSize: 14, fontWeight: '800', color: Colors.textPrimary, textTransform: 'uppercase', letterSpacing: 0.6 },
+  seeAll: { fontSize: 13, fontWeight: '700', color: Colors.brand },
 });
 
 const styles = StyleSheet.create({
@@ -316,13 +331,22 @@ const styles = StyleSheet.create({
 
   // Hero
   hero: {
-    backgroundColor: Colors.brand, borderRadius: 16, padding: 20, marginBottom: 16,
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    elevation: 6,
+    shadowColor: '#2e7d32',
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
   },
-  greeting: { fontSize: 20, fontWeight: '700', color: '#fff' },
-  subGreeting: { fontSize: 13, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
+  greeting: { fontSize: 22, fontWeight: '800', color: '#fff' },
+  subGreeting: { fontSize: 13, color: 'rgba(255,255,255,0.80)', marginTop: 2 },
   chatFabInline: {
-    width: 40, height: 40, borderRadius: 20,
+    width: 42, height: 42, borderRadius: 21,
     backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center',
   },
 
@@ -332,10 +356,10 @@ const styles = StyleSheet.create({
   // Active loans
   loanCard: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: Colors.surface, borderRadius: 12, padding: 12, marginBottom: 8,
-    elevation: 1, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 3,
+    backgroundColor: Colors.surface, borderRadius: 16, padding: 14, marginBottom: 8,
+    elevation: 3, shadowColor: Colors.shadow, shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 3 },
   },
-  loanCardOverdue: { borderWidth: 1, borderColor: Colors.error },
+  loanCardOverdue: { borderWidth: 1.5, borderColor: Colors.error },
   loanIcon: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
   loanInfo: { flex: 1 },
   loanTitle: { fontSize: 14, fontWeight: '700', color: Colors.textPrimary },
@@ -353,20 +377,23 @@ const styles = StyleSheet.create({
   overdueAlertText: { flex: 1, fontSize: 13, fontWeight: '600', color: Colors.error },
 
   // Quick actions
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary, marginBottom: 12 },
+  sectionTitle: { fontSize: 14, fontWeight: '800', color: Colors.textPrimary, marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.6 },
   quickGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 24 },
   quickCard: {
-    backgroundColor: Colors.surface, borderRadius: 14, padding: 16,
-    alignItems: 'center', width: '22.5%', flex: 1,
-    elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4,
+    backgroundColor: Colors.surface, borderRadius: 20, padding: 16,
+    alignItems: 'center', flex: 1,
+    elevation: 4, shadowColor: Colors.shadow, shadowOpacity: 0.10, shadowRadius: 8, shadowOffset: { width: 0, height: 4 },
   },
-  quickLabel: { marginTop: 6, fontSize: 11, fontWeight: '600', color: Colors.textPrimary, textAlign: 'center' },
+  quickLabel: { marginTop: 6, fontSize: 11, fontWeight: '700', color: Colors.textPrimary, textAlign: 'center' },
 
   // Recommended books
-  bookScroll: { gap: 12, paddingRight: 4 },
-  bookCard: { width: 130, backgroundColor: Colors.surface, borderRadius: 12, overflow: 'hidden', elevation: 2 },
+  bookScroll: { gap: 14, paddingRight: 4, paddingBottom: 4 },
+  bookCard: {
+    width: 160, backgroundColor: Colors.surface, borderRadius: 16, overflow: 'hidden',
+    elevation: 4, shadowColor: Colors.shadow, shadowOpacity: 0.10, shadowRadius: 8, shadowOffset: { width: 0, height: 4 },
+  },
   bookCover: {
-    height: 100, backgroundColor: Colors.brandLight,
+    width: '100%', height: 120, backgroundColor: Colors.brandLight,
     justifyContent: 'center', alignItems: 'center', position: 'relative',
   },
   bookCoverImg: { width: '100%', height: '100%' },
@@ -374,18 +401,18 @@ const styles = StyleSheet.create({
     position: 'absolute', top: 6, left: 6,
     backgroundColor: Colors.brand, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2,
   },
-  ebookBadgeText: { color: '#fff', fontSize: 9, fontWeight: '700' },
-  bookTitle: { fontSize: 12, fontWeight: '700', color: Colors.textPrimary, padding: 8, paddingBottom: 2 },
-  bookAuthor: { fontSize: 11, color: Colors.textSecond, paddingHorizontal: 8, paddingBottom: 6 },
-  availBadge: { marginHorizontal: 8, marginBottom: 8, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 3 },
-  availText: { fontSize: 10, fontWeight: '700' },
+  ebookBadgeText: { color: '#fff', fontSize: 9, fontWeight: '800' },
+  bookTitle: { fontSize: 13, fontWeight: '700', color: Colors.textPrimary, padding: 10, paddingBottom: 2 },
+  bookAuthor: { fontSize: 11, color: Colors.textSecond, paddingHorizontal: 10, paddingBottom: 8 },
+  availBadge: { marginHorizontal: 10, marginBottom: 10, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 },
+  availText: { fontSize: 10, fontWeight: '800' },
 
   // FAB
   fab: {
     position: 'absolute', bottom: 24, right: 16,
-    width: 52, height: 52, borderRadius: 26,
-    backgroundColor: Colors.brand,
+    width: 54, height: 54, borderRadius: 27,
+    backgroundColor: Colors.brandDarker,
     justifyContent: 'center', alignItems: 'center',
-    elevation: 6, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 4 },
+    elevation: 8, shadowColor: '#2e7d32', shadowOpacity: 0.4, shadowRadius: 12, shadowOffset: { width: 0, height: 6 },
   },
 });

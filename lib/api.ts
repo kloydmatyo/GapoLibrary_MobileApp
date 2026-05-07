@@ -42,9 +42,18 @@ export const getBook = (id: string) => api.get(`/books/${id}`);
 export const getHistory = (userId?: string) =>
   api.get('/circulation/history', { params: userId ? { userId } : {} });
 
+export const borrowBook = (bookId: string) =>
+  api.post('/circulation/checkout', { bookId });
+
 // --- Reservations ---
 export const createReservation = (bookId: string) =>
   api.post('/reservations', { bookId });
+
+export const getReservations = (bookId?: string) =>
+  api.get('/reservations', { params: bookId ? { bookId } : {} });
+
+export const cancelReservation = (reservationId: string) =>
+  api.delete('/reservations', { data: { reservationId } });
 
 // --- Email Verification ---
 export const resendVerificationEmail = (email: string) =>

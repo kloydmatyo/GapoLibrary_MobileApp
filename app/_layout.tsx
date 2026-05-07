@@ -73,7 +73,9 @@ function RootLayoutNav() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="books/[id]" options={{ headerShown: true, title: 'Book Details' }} />
+      <Stack.Screen name="books/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="books/borrow" options={{ headerShown: false }} />
+      <Stack.Screen name="books/reserve" options={{ headerShown: false }} />
       <Stack.Screen name="events" options={{ headerShown: false }} />
       <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
       <Stack.Screen name="verify-email" options={{ headerShown: true, title: 'Email Verification' }} />

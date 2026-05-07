@@ -43,7 +43,7 @@ export default function TabsLayout() {
             fontWeight: '600',
           },
           headerShown: true,
-          header: () => <CustomHeader messageCount={5} />,
+          header: () => <CustomHeader />,
         }}
       >
         <Tabs.Screen
@@ -76,7 +76,7 @@ export default function TabsLayout() {
         <Tabs.Screen
           name="reservations"
           options={{
-            title: 'Reserved',
+            title: 'Reservations',
             tabBarIcon: ({ color, size, focused }) => (
               <Ionicons name={focused ? "calendar" : "calendar-outline"} size={size} color={color} />
             ),
@@ -85,7 +85,7 @@ export default function TabsLayout() {
         <Tabs.Screen
           name="history"
           options={{
-            title: 'Borrowed',
+            title: 'History',
             tabBarIcon: ({ color, size, focused }) => (
               <HistoryTabIcon color={color} size={size} focused={focused} />
             ),

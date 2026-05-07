@@ -14,10 +14,62 @@ interface Notification {
   createdAt: string;
 }
 
+const TYPE_CONFIG: Record<Notification['type'], {
+  icon: string;
+  borderColor: string;
+  iconBg: string;
+  iconColor: string;
+  route: string | null;
+}> = {
+  overdue: {
+    icon: 'alert-circle-outline',
+    borderColor: Colors.error,
+    iconBg: Colors.errorBg,
+    iconColor: Colors.error,
+    route: '/(tabs)/history',
+  },
+  reservation_ready: {
+    icon: 'time-outline',
+    borderColor: '#f59e0b',
+    iconBg: '#fef3c7',
+    iconColor: '#f59e0b',
+    route: '/(tabs)/reservations',
+  },
+  pickup_confirmed: {
+    icon: 'checkmark-circle-outline',
+    borderColor: '#f59e0b',
+    iconBg: '#fef3c7',
+    iconColor: '#f59e0b',
+    route: '/(tabs)/reservations',
+  },
+  borrow_request: {
+    icon: 'book-outline',
+    borderColor: Colors.brand,
+    iconBg: Colors.brandMuted,
+    iconColor: Colors.brand,
+    route: '/(tabs)/history',
+  },
+  returned: {
+    icon: 'return-down-back-outline',
+    borderColor: Colors.brand,
+    iconBg: Colors.brandMuted,
+    iconColor: Colors.brand,
+    route: '/(tabs)/history',
+  },
+  general: {
+    icon: 'information-circle-outline',
+    borderColor: '#9ca3af',
+    iconBg: '#f3f4f6',
+    iconColor: '#6b7280',
+    route: null,
+  },
+};
+
 export default function NotificationsScreen() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [markingAll, setMarkingAll] = useState(false);
   const router = useRouter();
 
   const fetchNotifications = async () => {
@@ -52,20 +104,29 @@ export default function NotificationsScreen() {
     }
   };
 
-  const getNotificationIcon = (type: Notification['type']) => {
-    switch (type) {
-      case 'borrow_request':
-        return 'book-outline';
-      case 'pickup_confirmed':
-        return 'checkmark-circle-outline';
-      case 'returned':
-        return 'return-down-back-outline';
-      case 'overdue':
-        return 'alert-circle-outline';
-      case 'reservation_ready':
-        return 'notifications-outline';
-      default:
-        return 'information-circle-outline';
+  const markAllAsRead = async () => {
+    const unread = notifications.filter(n => !n.read);
+    if (unread.length === 0) return;
+
+    setMarkingAll(true);
+    try {
+      await api.post('/notifications/read-all');
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    } catch (error) {
+      console.error('Failed to mark all as read:', error);
+    } finally {
+      setMarkingAll(false);
+    }
+  };
+
+  const handleTap = async (item: Notification) => {
+    // Mark as read
+    if (!item.read) await markAsRead(item._id);
+
+    // Navigate based on type
+    const config = TYPE_CONFIG[item.type];
+    if (config.route) {
+      router.push(config.route as any);
     }
   };
 
@@ -84,33 +145,52 @@ export default function NotificationsScreen() {
     return date.toLocaleDateString();
   };
 
-  const renderNotification = ({ item }: { item: Notification }) => (
-    <TouchableOpacity
-      style={styles.notificationItem}
-      onPress={() => markAsRead(item._id)}
-      activeOpacity={0.7}
-    >
-      <View style={styles.iconContainer}>
-        <Ionicons name={getNotificationIcon(item.type) as any} size={24} color={Colors.brand} />
-      </View>
-      
-      <View style={styles.contentContainer}>
-        <Text style={styles.title}>{item.title}</Text>
-        <Text style={styles.message}>{item.message}</Text>
-        <Text style={styles.time}>{formatTime(item.createdAt)}</Text>
-      </View>
+  const unreadCount = notifications.filter(n => !n.read).length;
 
-      {!item.read && <View style={styles.unreadDot} />}
-    </TouchableOpacity>
-  );
+  const renderNotification = ({ item }: { item: Notification }) => {
+    const config = TYPE_CONFIG[item.type];
+
+    return (
+      <TouchableOpacity
+        style={[
+          styles.notificationItem,
+          { borderLeftColor: config.borderColor },
+          !item.read && styles.unreadItem,
+        ]}
+        onPress={() => handleTap(item)}
+        activeOpacity={0.7}
+      >
+        <View style={[styles.iconContainer, { backgroundColor: config.iconBg }]}>
+          <Ionicons name={config.icon as any} size={24} color={config.iconColor} />
+        </View>
+
+        <View style={styles.contentContainer}>
+          <Text style={[styles.title, !item.read && styles.titleUnread]}>{item.title}</Text>
+          <Text style={styles.message}>{item.message}</Text>
+          <Text style={styles.time}>{formatTime(item.createdAt)}</Text>
+        </View>
+
+        {!item.read && <View style={[styles.unreadDot, { backgroundColor: config.borderColor }]} />}
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Notifications</Text>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.viewAll}>Close</Text>
-        </TouchableOpacity>
+        <View style={styles.headerRight}>
+          {unreadCount > 0 && (
+            <TouchableOpacity onPress={markAllAsRead} disabled={markingAll}>
+              <Text style={[styles.markAllText, markingAll && styles.markAllDisabled]}>
+                Mark all read
+              </Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity onPress={() => router.back()}>
+            <Text style={styles.closeText}>Close</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.divider} />
@@ -152,7 +232,20 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.textPrimary,
   },
-  viewAll: {
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  markAllText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.textSecond,
+  },
+  markAllDisabled: {
+    opacity: 0.4,
+  },
+  closeText: {
     fontSize: 16,
     fontWeight: '600',
     color: Colors.brand,
@@ -169,14 +262,15 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: Colors.surface,
     borderLeftWidth: 3,
-    borderLeftColor: Colors.brand,
     marginBottom: 1,
+  },
+  unreadItem: {
+    backgroundColor: Colors.brandLight,
   },
   iconContainer: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: Colors.brandMuted,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -186,9 +280,12 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '500',
     color: Colors.textPrimary,
     marginBottom: 4,
+  },
+  titleUnread: {
+    fontWeight: '700',
   },
   message: {
     fontSize: 14,
@@ -204,7 +301,6 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: Colors.brand,
     marginLeft: 8,
     marginTop: 4,
   },

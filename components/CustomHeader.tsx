@@ -6,11 +6,9 @@ import { useAuth } from '@/context/AuthContext';
 import api from '@/lib/api';
 import Colors from '@/constants/colors';
 
-interface CustomHeaderProps {
-  messageCount?: number;
-}
+interface CustomHeaderProps {}
 
-export default function CustomHeader({ messageCount = 0 }: CustomHeaderProps) {
+export default function CustomHeader({}: CustomHeaderProps) {
   const { user } = useAuth();
   const router = useRouter();
   const [notificationCount, setNotificationCount] = useState(0);
@@ -48,21 +46,6 @@ export default function CustomHeader({ messageCount = 0 }: CustomHeaderProps) {
 
       {/* Right: Icons */}
       <View style={styles.rightSection}>
-        {/* Messages */}
-        <TouchableOpacity style={styles.iconButton}>
-          <Ionicons name="mail-outline" size={22} color={Colors.textPrimary} />
-          {messageCount > 0 && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{messageCount > 99 ? '99+' : messageCount}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-
-        {/* Theme Toggle */}
-        <TouchableOpacity style={styles.iconButton}>
-          <Ionicons name="moon-outline" size={22} color={Colors.textPrimary} />
-        </TouchableOpacity>
-
         {/* Notifications */}
         <TouchableOpacity 
           style={styles.iconButton}

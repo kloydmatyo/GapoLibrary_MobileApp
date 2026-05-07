@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { getBook, createReservation } from '@/lib/api';
+import { getBook, getHistory } from '@/lib/api';
 import { useBookAvailability } from '@/context/BookAvailabilityContext';
 import Colors from '@/constants/colors';
 
@@ -32,15 +32,22 @@ export default function BookDetailScreen() {
   const { availability, updateBookAvailability } = useBookAvailability();
   const [book, setBook] = useState<Book | null>(null);
   const [loading, setLoading] = useState(true);
-  const [reserving, setReserving] = useState(false);
+  const [alreadyBorrowed, setAlreadyBorrowed] = useState(false);
 
   useEffect(() => {
     const loadBook = async () => {
       try {
-        const res = await getBook(id);
-        setBook(res.data.book);
-        // Start tracking this book's availability
+        const [bookRes, historyRes] = await Promise.all([
+          getBook(id),
+          getHistory(),
+        ]);
+        setBook(bookRes.data.book);
         await updateBookAvailability(id);
+
+        const active = (historyRes.data.history ?? []).filter(
+          (h: any) => h.status === 'pending_pickup' || h.status === 'active'
+        );
+        setAlreadyBorrowed(active.some((h: any) => h.bookId === id));
       } catch {
         Alert.alert('Error', 'Could not load book details.');
       } finally {
@@ -50,7 +57,6 @@ export default function BookDetailScreen() {
 
     loadBook();
 
-    // Refresh availability every 15 seconds while on this screen
     const interval = setInterval(() => {
       updateBookAvailability(id);
     }, 15000);
@@ -58,27 +64,15 @@ export default function BookDetailScreen() {
     return () => clearInterval(interval);
   }, [id, updateBookAvailability]);
 
-  const handleReserve = async () => {
-    setReserving(true);
-    try {
-      await createReservation(id);
-      Alert.alert('Reserved', 'Your reservation has been placed.');
-      // Refresh availability after reservation
-      await updateBookAvailability(id);
-      // Reload book data
-      const res = await getBook(id);
-      setBook(res.data.book);
-    } catch (err: any) {
-      Alert.alert('Error', err?.response?.data?.error || 'Could not place reservation.');
-    } finally {
-      setReserving(false);
-    }
-  };
 
-  if (loading) return <ActivityIndicator style={{ marginTop: 60 }} size="large" color={Colors.brand} />;
+  if (loading) return (
+    <View style={styles.loadingContainer}>
+      <ActivityIndicator size="large" color={Colors.brand} />
+    </View>
+  );
+
   if (!book) return <Text style={styles.empty}>Book not found.</Text>;
 
-  // Use real-time availability if available
   const realtimeAvailability = availability[id];
   const availableCopies = realtimeAvailability?.availableCopies ?? book.availableCopies;
   const totalCopies = realtimeAvailability?.totalCopies ?? book.totalCopies;
@@ -86,84 +80,148 @@ export default function BookDetailScreen() {
   const hasRealtimeData = !!realtimeAvailability;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.coverWrap}>
-        {book.coverImageUrl
-          ? <Image source={{ uri: book.coverImageUrl }} style={styles.cover} resizeMode="cover" />
-          : <Ionicons name="book" size={64} color={Colors.brand} />}
+    <View style={styles.container}>
+      {/* Custom Header */}
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle} numberOfLines={1}>{book.title}</Text>
+        <View style={styles.headerSpacer} />
       </View>
 
-      <Text style={styles.title}>{book.title}</Text>
-      <Text style={styles.author}>by {book.author}</Text>
-
-      <View style={styles.badges}>
-        <View style={styles.badge}><Text style={styles.badgeText}>{book.category}</Text></View>
-        {book.section && <View style={styles.badge}><Text style={styles.badgeText}>{book.section}</Text></View>}
-        {book.isEbook && (
-          <View style={[styles.badge, { backgroundColor: Colors.warningBg }]}>
-            <Text style={[styles.badgeText, { color: Colors.warning }]}>eBook</Text>
-          </View>
-        )}
-      </View>
-
-      <View style={styles.card}>
-        {hasRealtimeData && (
-          <View style={styles.liveStatus}>
-            <View style={styles.liveDotLarge} />
-            <Text style={styles.liveText}>Live availability</Text>
-          </View>
-        )}
-        {[
-          ['Available Copies', `${availableCopies} / ${totalCopies}`],
-          book.isbn && ['ISBN', book.isbn],
-          book.publisher && ['Publisher', book.publisher],
-          book.publicationYear && ['Year', String(book.publicationYear)],
-        ].filter(Boolean).map(([label, value]) => (
-          <View key={label as string} style={styles.row}>
-            <Text style={styles.label}>{label}</Text>
-            <Text style={[styles.value, label === 'Available Copies' && { color: available ? Colors.success : Colors.error, fontWeight: '700' }]}>
-              {value}
-            </Text>
-          </View>
-        ))}
-      </View>
-
-      {book.description && (
-        <View style={styles.descCard}>
-          <Text style={styles.descTitle}>Description</Text>
-          <Text style={styles.desc}>{book.description}</Text>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+        <View style={styles.coverWrap}>
+          {book.coverImageUrl
+            ? <Image source={{ uri: book.coverImageUrl }} style={styles.cover} resizeMode="cover" />
+            : <Ionicons name="book" size={64} color={Colors.brand} />}
         </View>
-      )}
 
-      {book.isEbook && book.ebookUrl ? (
-        <TouchableOpacity
-          style={styles.readOnlineBtn}
-          onPress={() => {
-            Linking.openURL(book.ebookUrl!).catch(() => {
-              Alert.alert('Error', 'Could not open the eBook link.');
-            });
-          }}
-        >
-          <Ionicons name="reader-outline" size={20} color="#fff" />
-          <Text style={styles.readOnlineText}>Read Online</Text>
-        </TouchableOpacity>
-      ) : (
-        <TouchableOpacity
-          style={[styles.reserveBtn, !available && styles.disabledBtn]}
-          onPress={handleReserve}
-          disabled={!available || reserving}
-        >
-          {reserving
-            ? <ActivityIndicator color="#fff" />
-            : <Text style={styles.reserveText}>{available ? 'Reserve Book' : 'Not Available'}</Text>}
-        </TouchableOpacity>
-      )}
-    </ScrollView>
+        <Text style={styles.title}>{book.title}</Text>
+        <Text style={styles.author}>by {book.author}</Text>
+
+        <View style={styles.badges}>
+          <View style={styles.badge}><Text style={styles.badgeText}>{book.category}</Text></View>
+          {book.section && <View style={styles.badge}><Text style={styles.badgeText}>{book.section}</Text></View>}
+          {book.isEbook && (
+            <View style={[styles.badge, { backgroundColor: Colors.warningBg }]}>
+              <Text style={[styles.badgeText, { color: Colors.warning }]}>eBook</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.card}>
+          {hasRealtimeData && (
+            <View style={styles.liveStatus}>
+              <View style={styles.liveDotLarge} />
+              <Text style={styles.liveText}>Live availability</Text>
+            </View>
+          )}
+          {([
+            ['Available Copies', `${availableCopies} / ${totalCopies}`],
+            book.isbn ? ['ISBN', book.isbn] : null,
+            book.publisher ? ['Publisher', book.publisher] : null,
+            book.publicationYear ? ['Year', String(book.publicationYear)] : null,
+          ].filter(Boolean) as [string, string][]).map(([label, value]) => (
+            <View key={label as string} style={styles.row}>
+              <Text style={styles.label}>{label}</Text>
+              <Text style={[styles.value, label === 'Available Copies' && {
+                color: available ? Colors.success : Colors.error, fontWeight: '700',
+              }]}>
+                {value}
+              </Text>
+            </View>
+          ))}
+        </View>
+
+        {book.description && (
+          <View style={styles.descCard}>
+            <Text style={styles.descTitle}>Description</Text>
+            <Text style={styles.desc}>{book.description}</Text>
+          </View>
+        )}
+
+        {book.isEbook && book.ebookUrl ? (
+          <TouchableOpacity
+            style={styles.readOnlineBtn}
+            onPress={() => {
+              Linking.openURL(book.ebookUrl!).catch(() => {
+                Alert.alert('Error', 'Could not open the eBook link.');
+              });
+            }}
+          >
+            <Ionicons name="reader-outline" size={20} color="#fff" />
+            <Text style={styles.readOnlineText}>Read Online</Text>
+          </TouchableOpacity>
+        ) : alreadyBorrowed ? (
+          <View style={[styles.actionBtn, styles.disabledBtn]}>
+            <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
+            <Text style={styles.actionBtnText}>Already Borrowed</Text>
+          </View>
+        ) : available ? (
+          <>
+            <View style={styles.borrowHint}>
+              <Ionicons name="information-circle-outline" size={16} color={Colors.brand} />
+              <Text style={styles.borrowHintText}>
+                You must visit the library to collect your book within 24 hours of requesting.
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.actionBtn}
+              onPress={() => router.push(`/books/borrow?id=${id}` as any)}
+            >
+              <Ionicons name="book-outline" size={20} color="#fff" />
+              <Text style={styles.actionBtnText}>Borrow This Book</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <>
+            <View style={styles.queueHint}>
+              <Ionicons name="time-outline" size={16} color="#f59e0b" />
+              <Text style={styles.queueHintText}>
+                All copies are checked out. Join the queue and we'll notify you when one is available.
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.joinQueueBtn}
+              onPress={() => router.push(`/books/reserve?id=${id}` as any)}
+            >
+              <Ionicons name="time-outline" size={20} color="#fff" />
+              <Text style={styles.actionBtnText}>Join Queue</Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: Colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  backButton: { padding: 4, marginRight: 12 },
+  headerTitle: {
+    flex: 1,
+    fontSize: 17,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+  },
+  headerSpacer: { width: 40 },
+  scroll: { flex: 1 },
   content: { padding: 20 },
   coverWrap: {
     width: 120, height: 160, borderRadius: 10, backgroundColor: Colors.brandLight,
@@ -181,44 +239,41 @@ const styles = StyleSheet.create({
     elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4,
   },
   liveStatus: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingBottom: 12,
-    marginBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingBottom: 12, marginBottom: 8, borderBottomWidth: 1, borderBottomColor: '#f3f4f6',
   },
-  liveDotLarge: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.brand,
-  },
-  liveText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Colors.brand,
-  },
+  liveDotLarge: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.brand },
+  liveText: { fontSize: 12, fontWeight: '600', color: Colors.brand },
   row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
   label: { fontSize: 13, color: Colors.textSecond },
   value: { fontSize: 13, color: Colors.textPrimary, fontWeight: '500' },
   descCard: { backgroundColor: Colors.surface, borderRadius: 14, padding: 16, marginBottom: 16, elevation: 2 },
   descTitle: { fontSize: 14, fontWeight: '700', color: Colors.textPrimary, marginBottom: 8 },
   desc: { fontSize: 13, color: '#4b5563', lineHeight: 20 },
-  readOnlineBtn: { 
-    backgroundColor: Colors.brand, 
-    borderRadius: 12, 
-    padding: 16, 
-    alignItems: 'center', 
-    marginBottom: 20,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 8,
+  readOnlineBtn: {
+    backgroundColor: Colors.brand, borderRadius: 12, padding: 16, alignItems: 'center',
+    marginBottom: 20, flexDirection: 'row', justifyContent: 'center', gap: 8,
   },
   readOnlineText: { color: '#fff', fontWeight: '700', fontSize: 16 },
-  reserveBtn: { backgroundColor: Colors.brand, borderRadius: 12, padding: 16, alignItems: 'center', marginBottom: 20 },
+  borrowHint: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 8,
+    backgroundColor: Colors.brandMuted, borderRadius: 10, padding: 12, marginBottom: 12,
+  },
+  borrowHintText: { flex: 1, fontSize: 13, color: Colors.brandDark, lineHeight: 18 },
+  queueHint: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 8,
+    backgroundColor: '#fef3c7', borderRadius: 10, padding: 12, marginBottom: 12,
+  },
+  queueHintText: { flex: 1, fontSize: 13, color: '#92400e', lineHeight: 18 },
+  actionBtn: {
+    backgroundColor: Colors.brand, borderRadius: 12, padding: 16,
+    alignItems: 'center', marginBottom: 20, flexDirection: 'row', justifyContent: 'center', gap: 8,
+  },
+  joinQueueBtn: {
+    backgroundColor: '#f59e0b', borderRadius: 12, padding: 16,
+    alignItems: 'center', marginBottom: 20, flexDirection: 'row', justifyContent: 'center', gap: 8,
+  },
+  actionBtnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
   disabledBtn: { backgroundColor: Colors.textMuted },
-  reserveText: { color: '#fff', fontWeight: '700', fontSize: 16 },
   empty: { textAlign: 'center', marginTop: 60, color: Colors.textMuted },
 });

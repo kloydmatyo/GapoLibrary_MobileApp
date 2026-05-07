@@ -46,6 +46,30 @@ export default function ProfileScreen() {
         <Text style={styles.editText}>Edit Profile</Text>
       </TouchableOpacity>
 
+      <TouchableOpacity
+        style={styles.editBtn}
+        onPress={() => router.push('/preferences')}
+      >
+        <Ionicons name="settings-outline" size={20} color={Colors.brand} />
+        <Text style={styles.editText}>Notification Preferences</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.chatBtn}
+        onPress={() => router.push('/chat')}
+      >
+        <Ionicons name="chatbubble-ellipses-outline" size={20} color="#7c3aed" />
+        <Text style={styles.chatText}>AI Assistant</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity 
+        style={styles.rateBtn} 
+        onPress={() => router.push('/rate')}
+      >
+        <Ionicons name="star-outline" size={20} color="#f59e0b" />
+        <Text style={styles.rateText}>Rate a Librarian</Text>
+      </TouchableOpacity>
+
       <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
         <Ionicons name="log-out-outline" size={20} color={Colors.error} />
         <Text style={styles.logoutText}>Sign Out</Text>
@@ -78,6 +102,16 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.brandMuted, borderRadius: 12, padding: 14, marginBottom: 12,
   },
   editText: { color: Colors.brand, fontWeight: '600', fontSize: 15 },
+  rateBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    backgroundColor: '#fef3c7', borderRadius: 12, padding: 14, marginBottom: 12,
+  },
+  rateText: { color: '#d97706', fontWeight: '600', fontSize: 15 },
+  chatBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    backgroundColor: '#f5f3ff', borderRadius: 12, padding: 14, marginBottom: 12,
+  },
+  chatText: { color: '#7c3aed', fontWeight: '600', fontSize: 15 },
   logoutBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
     backgroundColor: Colors.errorBg, borderRadius: 12, padding: 14,

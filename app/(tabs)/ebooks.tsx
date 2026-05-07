@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, FlatList, TextInput, TouchableOpacity,
-  StyleSheet, ActivityIndicator, Image, Alert, Linking,
+  StyleSheet, ActivityIndicator, Image, Alert, Linking, ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,6 +25,7 @@ export default function EbooksScreen() {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [activeCategory, setActiveCategory] = useState('All');
 
   const fetchEbooks = useCallback(async (q?: string) => {
     try {
@@ -41,11 +42,27 @@ export default function EbooksScreen() {
     }
   }, []);
 
+  // Extract unique categories
+  const categories = ['All', ...Array.from(new Set(ebooks.map((b) => b.category)))];
+
+  // Filter by category and search
+  const filteredEbooks = ebooks.filter((book) => {
+    const matchesCategory = activeCategory === 'All' || book.category === activeCategory;
+    const matchesSearch =
+      !search ||
+      book.title.toLowerCase().includes(search.toLowerCase()) ||
+      book.author.toLowerCase().includes(search.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
+
   useEffect(() => {
     fetchEbooks();
   }, []);
 
-  const onSearch = () => fetchEbooks(search.trim() || undefined);
+  const onSearch = () => {
+    setActiveCategory('All'); // Reset category when searching
+    fetchEbooks(search.trim() || undefined);
+  };
 
   const handleReadOnline = (ebook: Ebook) => {
     if (!ebook.ebookUrl) {
@@ -135,9 +152,34 @@ export default function EbooksScreen() {
         <View style={styles.countContainer}>
           <Ionicons name="book-outline" size={18} color={Colors.brand} />
           <Text style={styles.countText}>
-            {ebooks.length} {ebooks.length === 1 ? 'eBook' : 'eBooks'} available
+            {filteredEbooks.length} {filteredEbooks.length === 1 ? 'eBook' : 'eBooks'} available
           </Text>
         </View>
+      )}
+
+      {/* Category Filter */}
+      {!loading && categories.length > 1 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.categoryScrollView}
+          contentContainerStyle={styles.categoryScroll}
+        >
+          {categories.map((cat) => {
+            const isActive = activeCategory === cat;
+            return (
+              <TouchableOpacity
+                key={cat}
+                style={[styles.categoryChip, isActive && styles.categoryChipActive]}
+                onPress={() => setActiveCategory(cat)}
+              >
+                <Text style={[styles.categoryChipText, isActive && styles.categoryChipTextActive]}>
+                  {cat}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       )}
 
       {/* List */}
@@ -145,7 +187,7 @@ export default function EbooksScreen() {
         <ActivityIndicator style={{ marginTop: 40 }} size="large" color={Colors.brand} />
       ) : (
         <FlatList
-          data={ebooks}
+          data={filteredEbooks}
           keyExtractor={(item) => item._id}
           renderItem={renderItem}
           contentContainerStyle={styles.list}
@@ -158,7 +200,7 @@ export default function EbooksScreen() {
             <View style={styles.emptyContainer}>
               <Ionicons name="book-outline" size={64} color={Colors.textMuted} />
               <Text style={styles.emptyTitle}>No eBooks found</Text>
-              <Text style={styles.emptyText}>Try a different search term</Text>
+              <Text style={styles.emptyText}>Try a different search or category</Text>
             </View>
           }
         />
@@ -220,6 +262,38 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: Colors.textPrimary,
+  },
+  categoryScrollView: {
+    flexGrow: 0,
+    flexShrink: 0,
+  },
+  categoryScroll: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    gap: 8,
+    alignItems: 'center',
+  },
+  categoryChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface,
+    height: 34,
+    justifyContent: 'center',
+  },
+  categoryChipActive: {
+    backgroundColor: Colors.brand,
+    borderColor: Colors.brand,
+  },
+  categoryChipText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+  },
+  categoryChipTextActive: {
+    color: '#fff',
   },
   list: {
     paddingHorizontal: 16,

@@ -55,6 +55,33 @@ export const getReservations = (bookId?: string) =>
 export const cancelReservation = (reservationId: string) =>
   api.delete('/reservations', { data: { reservationId } });
 
+// --- Bookmarks ---
+export const toggleBookmark = (bookId: string) =>
+  api.post('/user/bookmarks', { bookId });
+
+export const getBookmarks = () =>
+  api.get('/user/preferences').then((res) => res.data.bookmarks as string[]);
+
+// --- Chat ---
+export const sendChatMessage = (message: string, conversationHistory: { role: string; content: string }[], sessionId?: string) =>
+  api.post('/chat', { message, conversationHistory, sessionId });
+
+// --- Preferences ---
+export const getPreferences = () =>
+  api.get('/user/preferences');
+
+export const savePreferences = (data: {
+  favoriteCategories?: string[];
+  notifications?: { overdue?: boolean; reservationReady?: boolean; pickupReminder?: boolean };
+}) => api.patch('/user/preferences', data);
+
+// --- Ratings ---
+export const getStaffList = () =>
+  api.get('/ratings/staff');
+
+export const submitRating = (staffId: string, score: number, comment?: string) =>
+  api.post('/ratings', { staffId, score, comment });
+
 // --- Email Verification ---
 export const resendVerificationEmail = (email: string) =>
   api.post('/auth/resend-verification', { email });

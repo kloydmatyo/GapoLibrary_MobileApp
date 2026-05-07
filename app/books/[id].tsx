@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { getBook, getHistory } from '@/lib/api';
+import { getBook, getHistory, toggleBookmark, getBookmarks } from '@/lib/api';
 import { useBookAvailability } from '@/context/BookAvailabilityContext';
 import Colors from '@/constants/colors';
 
@@ -33,13 +33,16 @@ export default function BookDetailScreen() {
   const [book, setBook] = useState<Book | null>(null);
   const [loading, setLoading] = useState(true);
   const [alreadyBorrowed, setAlreadyBorrowed] = useState(false);
+  const [bookmarked, setBookmarked] = useState(false);
+  const [bookmarkLoading, setBookmarkLoading] = useState(false);
 
   useEffect(() => {
     const loadBook = async () => {
       try {
-        const [bookRes, historyRes] = await Promise.all([
+        const [bookRes, historyRes, bookmarkIds] = await Promise.all([
           getBook(id),
           getHistory(),
+          getBookmarks(),
         ]);
         setBook(bookRes.data.book);
         await updateBookAvailability(id);
@@ -48,6 +51,7 @@ export default function BookDetailScreen() {
           (h: any) => h.status === 'pending_pickup' || h.status === 'active'
         );
         setAlreadyBorrowed(active.some((h: any) => h.bookId === id));
+        setBookmarked(bookmarkIds.includes(id));
       } catch {
         Alert.alert('Error', 'Could not load book details.');
       } finally {
@@ -65,8 +69,19 @@ export default function BookDetailScreen() {
   }, [id, updateBookAvailability]);
 
 
-  if (loading) return (
-    <View style={styles.loadingContainer}>
+  const handleBookmark = async () => {
+    setBookmarkLoading(true);
+    try {
+      const res = await toggleBookmark(id);
+      setBookmarked(res.data.bookmarked);
+    } catch {
+      Alert.alert('Error', 'Could not update bookmark.');
+    } finally {
+      setBookmarkLoading(false);
+    }
+  };
+
+  if (loading) return (    <View style={styles.loadingContainer}>
       <ActivityIndicator size="large" color={Colors.brand} />
     </View>
   );
@@ -87,7 +102,17 @@ export default function BookDetailScreen() {
           <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>{book.title}</Text>
-        <View style={styles.headerSpacer} />
+        <TouchableOpacity
+          style={styles.bookmarkButton}
+          onPress={handleBookmark}
+          disabled={bookmarkLoading}
+        >
+          <Ionicons
+            name={bookmarked ? 'bookmark' : 'bookmark-outline'}
+            size={24}
+            color={bookmarked ? Colors.brand : Colors.textPrimary}
+          />
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
@@ -220,7 +245,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.textPrimary,
   },
-  headerSpacer: { width: 40 },
+  bookmarkButton: { padding: 4 },
   scroll: { flex: 1 },
   content: { padding: 20 },
   coverWrap: {

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, RefreshControl, Alert } from 'react-native';
+import { View, Text, FlatList, StyleSheet, ActivityIndicator, RefreshControl, Alert, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getHistory } from '@/lib/api';
 import Colors from '@/constants/colors';
@@ -23,27 +23,46 @@ const STATUS_CONFIG = {
   expired:        { color: '#6b7280', bg: '#f3f4f6', label: 'Expired', icon: 'close-circle-outline' as const },
 };
 
+type FilterKey = 'all' | HistoryItem['status'];
+
+const FILTERS: { key: FilterKey; label: string }[] = [
+  { key: 'all',            label: 'All' },
+  { key: 'pending_pickup', label: 'Awaiting Pickup' },
+  { key: 'active',         label: 'Borrowed' },
+  { key: 'overdue',        label: 'Overdue' },
+  { key: 'returned',       label: 'Returned' },
+];
+
 export default function HistoryScreen() {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [overdueCount, setOverdueCount] = useState(0);
+  const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
   const { refreshOverdueCount } = useOverdue();
 
   const fetchHistory = useCallback(async () => {
     try {
       const res = await getHistory();
-      const historyData = res.data.history;
-      setHistory(historyData);
-      
-      // Count overdue items
-      const overdue = historyData.filter((item: HistoryItem) => item.status === 'overdue').length;
+      const historyData: HistoryItem[] = res.data.history;
+
+      // Normalise: treat active-but-past-due as overdue client-side
+      const normalised = historyData.map((item) => ({
+        ...item,
+        status: (
+          item.status === 'active' && new Date(item.dueDate) < new Date()
+            ? 'overdue'
+            : item.status
+        ) as HistoryItem['status'],
+      }));
+
+      setHistory(normalised);
+
+      const overdue = normalised.filter((item) => item.status === 'overdue').length;
       setOverdueCount(overdue);
-      
-      // Update global overdue count
+
       await refreshOverdueCount();
-      
-      // Show alert if there are overdue books
+
       if (overdue > 0 && !refreshing) {
         Alert.alert(
           '⚠️ Overdue Books',
@@ -67,6 +86,13 @@ export default function HistoryScreen() {
     setRefreshing(true);
     fetchHistory();
   };
+
+  const filteredHistory = activeFilter === 'all'
+    ? history
+    : history.filter((h) => h.status === activeFilter);
+
+  const countFor = (key: FilterKey) =>
+    key === 'all' ? history.length : history.filter((h) => h.status === key).length;
 
   const fmt = (d: string) => new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
 
@@ -116,9 +142,38 @@ export default function HistoryScreen() {
           </Text>
         </View>
       )}
-      
+
+      {/* Filter chips */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.filterScroll}
+        style={styles.filterScrollView}
+      >
+        {FILTERS.map((f) => {
+          const isActive = activeFilter === f.key;
+          const count = countFor(f.key);
+          return (
+            <TouchableOpacity
+              key={f.key}
+              style={[styles.filterChip, isActive && styles.filterChipActive]}
+              onPress={() => setActiveFilter(f.key)}
+            >
+              <Text style={[styles.filterChipText, isActive && styles.filterChipTextActive]}>
+                {f.label}
+              </Text>
+              <View style={[styles.filterCount, isActive && styles.filterCountActive]}>
+                <Text style={[styles.filterCountText, isActive && styles.filterCountTextActive]}>
+                  {count}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+
       <FlatList
-        data={history}
+        data={filteredHistory}
         keyExtractor={(h) => h._id}
         renderItem={renderItem}
         contentContainerStyle={styles.list}
@@ -128,7 +183,9 @@ export default function HistoryScreen() {
         ListEmptyComponent={
           <View style={styles.emptyWrap}>
             <Ionicons name="time-outline" size={48} color={Colors.border} />
-            <Text style={styles.empty}>No borrowing history yet.</Text>
+            <Text style={styles.empty}>
+              {activeFilter === 'all' ? 'No borrowing history yet.' : `No ${FILTERS.find(f => f.key === activeFilter)?.label.toLowerCase()} loans.`}
+            </Text>
           </View>
         }
       />
@@ -156,6 +213,43 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Colors.error,
   },
+  filterScrollView: {
+    flexGrow: 0,
+    flexShrink: 0,
+  },
+  filterScroll: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 8,
+    alignItems: 'center',
+  },
+  filterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface,
+    height: 36,
+  },
+  filterChipActive: {
+    backgroundColor: Colors.brand,
+    borderColor: Colors.brand,
+  },
+  filterChipText: {
+    fontSize: 13, fontWeight: '700', color: Colors.textPrimary,
+  },
+  filterChipTextActive: { color: '#fff' },
+  filterCount: {
+    backgroundColor: '#f3f4f6', borderRadius: 10,
+    paddingHorizontal: 6, paddingVertical: 1,
+  },
+  filterCountActive: { backgroundColor: 'rgba(255,255,255,0.25)' },
+  filterCountText: { fontSize: 11, fontWeight: '700', color: Colors.textMuted },
+  filterCountTextActive: { color: '#fff' },
   list: { padding: 16 },
   item: {
     backgroundColor: Colors.surface, borderRadius: 12, padding: 14, marginBottom: 10,

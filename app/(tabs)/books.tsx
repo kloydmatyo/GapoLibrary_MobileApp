@@ -139,6 +139,7 @@ export default function BooksScreen() {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
+          style={styles.chipsScrollView}
           contentContainerStyle={styles.chips}
         >
           {categories.map(cat => (
@@ -197,10 +198,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.textPrimary,
   },
+  chipsScrollView: {
+    flexGrow: 0,
+    flexShrink: 0,
+  },
   chips: {
     paddingHorizontal: 16,
     paddingBottom: 12,
     gap: 8,
+    alignItems: 'center',
   },
   chip: {
     paddingHorizontal: 14,
@@ -209,6 +215,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderWidth: 1,
     borderColor: Colors.border,
+    height: 34,
+    justifyContent: 'center',
   },
   chipActive: {
     backgroundColor: Colors.brand,

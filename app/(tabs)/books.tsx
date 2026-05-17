@@ -1,13 +1,15 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View, Text, FlatList, TextInput, TouchableOpacity,
-  StyleSheet, ActivityIndicator, Image, ScrollView, Animated,
+  StyleSheet, ActivityIndicator, ScrollView, Animated,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getBooks } from '@/lib/api';
 import { useBookAvailability } from '@/context/BookAvailabilityContext';
-import Colors from '@/constants/colors';
+import Colors, { Radius } from '@/constants/colors';
+import { Fonts } from '@/constants/typography';
+import BookCover from '@/components/BookCover';
 
 interface Book {
   _id: string;
@@ -15,6 +17,7 @@ interface Book {
   author: string;
   category: string;
   availableCopies: number;
+  isbn?: string;
   coverImageUrl?: string;
 }
 
@@ -26,13 +29,11 @@ function LiveDot() {
       Animated.sequence([
         Animated.timing(pulse, { toValue: 0.3, duration: 800, useNativeDriver: true }),
         Animated.timing(pulse, { toValue: 1, duration: 800, useNativeDriver: true }),
-      ])
+      ]),
     ).start();
   }, [pulse]);
 
-  return (
-    <Animated.View style={[styles.liveDot, { opacity: pulse }]} />
-  );
+  return <Animated.View style={[styles.liveDot, { opacity: pulse }]} />;
 }
 
 export default function BooksScreen() {
@@ -62,20 +63,17 @@ export default function BooksScreen() {
 
   useEffect(() => { fetchBooks(); }, []);
 
-  // Debounced live search — filters locally, no extra API calls
   const handleSearchChange = (text: string) => {
     setSearch(text);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      setSelectedCategory('All'); // reset category when searching
+      setSelectedCategory('All');
     }, 300);
   };
 
-  // Derive categories from loaded books
-  const categories = ['All', ...Array.from(new Set(allBooks.map(b => b.category))).sort()];
+  const categories = ['All', ...Array.from(new Set(allBooks.map((b) => b.category))).sort()];
 
-  // Filter locally — instant, no network
-  const filteredBooks = allBooks.filter(book => {
+  const filteredBooks = allBooks.filter((book) => {
     const matchesSearch = !search.trim() ||
       book.title.toLowerCase().includes(search.toLowerCase()) ||
       book.author.toLowerCase().includes(search.toLowerCase());
@@ -93,11 +91,12 @@ export default function BooksScreen() {
 
     return (
       <TouchableOpacity style={styles.item} onPress={() => router.push(`/books/${item._id}` as any)}>
-        <View style={styles.cover}>
-          {item.coverImageUrl
-            ? <Image source={{ uri: item.coverImageUrl }} style={styles.coverImg} />
-            : <Ionicons name="book" size={28} color={Colors.brand} />}
-        </View>
+        <BookCover
+          isbn={item.isbn}
+          coverImageUrl={item.coverImageUrl}
+          width={48}
+          height={64}
+        />
         <View style={styles.info}>
           <Text style={styles.title} numberOfLines={2}>{item.title}</Text>
           <Text style={styles.author}>{item.author}</Text>
@@ -105,7 +104,12 @@ export default function BooksScreen() {
             <Text style={styles.category}>{item.category}</Text>
             <View style={styles.availContainer}>
               {isLive && <LiveDot />}
-              <Text style={[styles.avail, { color: availableCopies > 0 ? Colors.success : Colors.error }]}>
+              <Text
+                style={[
+                  styles.avail,
+                  { color: availableCopies > 0 ? Colors.accent : Colors.textMuted },
+                ]}
+              >
                 {availableCopies > 0 ? `${availableCopies} available` : 'Unavailable'}
               </Text>
             </View>
@@ -118,7 +122,6 @@ export default function BooksScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Search — no button, filters as you type */}
       <View style={styles.searchWrap}>
         <Ionicons name="search-outline" size={18} color={Colors.textMuted} style={styles.searchIcon} />
         <TextInput
@@ -137,7 +140,6 @@ export default function BooksScreen() {
         )}
       </View>
 
-      {/* Availability toggle */}
       <View style={styles.filterRow}>
         <TouchableOpacity
           style={[styles.availToggle, availableOnly && styles.availToggleActive]}
@@ -162,7 +164,6 @@ export default function BooksScreen() {
         )}
       </View>
 
-      {/* Category chips */}
       {!loading && (
         <ScrollView
           horizontal
@@ -170,7 +171,7 @@ export default function BooksScreen() {
           style={styles.chipsScrollView}
           contentContainerStyle={styles.chips}
         >
-          {categories.map(cat => (
+          {categories.map((cat) => (
             <TouchableOpacity
               key={cat}
               style={[styles.chip, selectedCategory === cat && styles.chipActive]}
@@ -184,24 +185,23 @@ export default function BooksScreen() {
         </ScrollView>
       )}
 
-      {loading
-        ? <ActivityIndicator style={{ marginTop: 40 }} size="large" color={Colors.brand} />
-        : (
-          <FlatList
-            data={filteredBooks}
-            keyExtractor={(b) => b._id}
-            renderItem={renderItem}
-            contentContainerStyle={styles.list}
-            onRefresh={() => { setRefreshing(true); fetchBooks(); }}
-            refreshing={refreshing}
-            ListEmptyComponent={
-              <View style={styles.emptyWrap}>
-                <Ionicons name="search-outline" size={48} color={Colors.border} />
-                <Text style={styles.empty}>No books found.</Text>
-              </View>
-            }
-          />
-        )}
+      {loading ? (
+        <ActivityIndicator style={{ marginTop: 40 }} size="large" color={Colors.accent} />
+      ) : filteredBooks.length === 0 ? (
+        <View style={styles.emptyFull}>
+          <Text style={styles.emptyTitle}>No books match your search</Text>
+          <Text style={styles.emptyBody}>Try a different title, author, or category.</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={filteredBooks}
+          keyExtractor={(b) => b._id}
+          renderItem={renderItem}
+          contentContainerStyle={styles.list}
+          onRefresh={() => { setRefreshing(true); fetchBooks(); }}
+          refreshing={refreshing}
+        />
+      )}
     </View>
   );
 }
@@ -212,76 +212,130 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     margin: 16,
+    marginBottom: 8,
     paddingHorizontal: 14,
     backgroundColor: Colors.surface,
-    borderRadius: 16,
+    borderRadius: Radius.container,
     borderWidth: 1,
     borderColor: Colors.border,
     gap: 8,
-    elevation: 3,
-    shadowColor: Colors.shadow,
-    shadowOpacity: 0.07,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
   },
   searchIcon: { marginRight: 2 },
   searchInput: {
     flex: 1,
     paddingVertical: 12,
     fontSize: 14,
+    fontFamily: Fonts.body,
     color: Colors.textPrimary,
-    fontWeight: '500',
   },
   filterRow: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingBottom: 8, gap: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+    gap: 8,
   },
   availToggle: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20,
-    borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: Radius.container,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface,
     height: 34,
-    elevation: 2, shadowColor: Colors.shadow, shadowOpacity: 0.06, shadowRadius: 4,
   },
   availToggleActive: {
-    backgroundColor: Colors.brand, borderColor: Colors.brand,
+    backgroundColor: Colors.accent,
+    borderColor: Colors.accent,
   },
-  availToggleText: { fontSize: 13, fontWeight: '700', color: Colors.textSecond },
+  availToggleText: {
+    fontSize: 13,
+    fontFamily: Fonts.bodySemiBold,
+    color: Colors.textSecond,
+  },
   availToggleTextActive: { color: '#fff' },
   clearBtn: { paddingHorizontal: 10, paddingVertical: 6 },
-  clearBtnText: { fontSize: 12, fontWeight: '700', color: Colors.brand },
+  clearBtnText: {
+    fontSize: 12,
+    fontFamily: Fonts.bodySemiBold,
+    color: Colors.accent,
+  },
   chipsScrollView: { flexGrow: 0, flexShrink: 0 },
   chips: { paddingHorizontal: 16, paddingBottom: 12, gap: 8, alignItems: 'center' },
   chip: {
-    paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20,
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
-    height: 34, justifyContent: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: Radius.container,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    height: 34,
+    justifyContent: 'center',
   },
-  chipActive: { backgroundColor: Colors.brand, borderColor: Colors.brand },
-  chipText: { fontSize: 13, fontWeight: '700', color: Colors.textSecond },
+  chipActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
+  chipText: {
+    fontSize: 13,
+    fontFamily: Fonts.bodySemiBold,
+    color: Colors.textSecond,
+  },
   chipTextActive: { color: '#fff' },
   list: { paddingHorizontal: 16, paddingBottom: 20 },
   item: {
-    backgroundColor: Colors.surface, borderRadius: 20, padding: 14, marginBottom: 10,
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    elevation: 4, shadowColor: Colors.shadow, shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 4 },
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.container,
+    padding: 12,
+    marginBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderLeftWidth: 4,
+    borderLeftColor: Colors.accent,
   },
-  cover: {
-    width: 52, height: 68, borderRadius: 10, backgroundColor: Colors.brandLight,
-    justifyContent: 'center', alignItems: 'center', overflow: 'hidden',
-  },
-  coverImg: { width: '100%', height: '100%' },
   info: { flex: 1 },
-  title: { fontSize: 14, fontWeight: '800', color: Colors.textPrimary, marginBottom: 2 },
-  author: { fontSize: 12, color: Colors.textSecond, marginBottom: 6, fontWeight: '600' },
+  title: {
+    fontSize: 14,
+    fontFamily: Fonts.bodySemiBold,
+    color: Colors.textPrimary,
+    marginBottom: 2,
+  },
+  author: {
+    fontSize: 12,
+    fontFamily: Fonts.body,
+    color: Colors.textSecond,
+    marginBottom: 6,
+  },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   category: {
-    fontSize: 11, color: Colors.textMuted, backgroundColor: Colors.brandLight,
-    paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, fontWeight: '700',
+    fontSize: 11,
+    fontFamily: Fonts.bodyMedium,
+    color: Colors.textMuted,
+    backgroundColor: Colors.surfaceMuted,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: Radius.inner,
   },
   availContainer: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.brand },
-  avail: { fontSize: 11, fontWeight: '700' },
-  emptyWrap: { alignItems: 'center', marginTop: 60, gap: 12 },
-  empty: { textAlign: 'center', color: Colors.textMuted, fontSize: 14, fontWeight: '600' },
+  liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.accent },
+  avail: { fontSize: 11, fontFamily: Fonts.bodySemiBold },
+  emptyFull: { flex: 1, justifyContent: 'center', paddingHorizontal: 32 },
+  emptyTitle: {
+    fontSize: 18,
+    fontFamily: Fonts.heading,
+    color: Colors.textPrimary,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  emptyBody: {
+    fontSize: 14,
+    fontFamily: Fonts.body,
+    color: Colors.textSecond,
+    textAlign: 'center',
+    lineHeight: 21,
+  },
 });

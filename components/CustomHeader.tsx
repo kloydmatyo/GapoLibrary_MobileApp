@@ -1,7 +1,6 @@
 import { View, Text, StyleSheet, TouchableOpacity, Modal, Pressable, Image, ScrollView, ActivityIndicator } from 'react-native';
 import { useState, useEffect, useCallback } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
 import api from '@/lib/api';
@@ -18,11 +17,11 @@ interface Notification {
 
 const TYPE_CONFIG: Record<Notification['type'], { icon: string; accentColor: string; iconBg: string; iconColor: string }> = {
   overdue:           { icon: 'alert-circle',     accentColor: Colors.error,  iconBg: Colors.errorBg,   iconColor: Colors.error  },
-  reservation_ready: { icon: 'time',              accentColor: '#f59e0b',     iconBg: '#fef3c7',        iconColor: '#f59e0b'     },
-  pickup_confirmed:  { icon: 'checkmark-circle',  accentColor: '#f59e0b',     iconBg: '#fef3c7',        iconColor: '#f59e0b'     },
-  borrow_request:    { icon: 'book',              accentColor: Colors.brand,  iconBg: Colors.brandMuted, iconColor: Colors.brand },
-  returned:          { icon: 'checkmark-done',    accentColor: Colors.brand,  iconBg: Colors.brandMuted, iconColor: Colors.brand },
-  general:           { icon: 'information-circle', accentColor: '#9ca3af',   iconBg: '#f3f4f6',        iconColor: '#6b7280'     },
+  reservation_ready: { icon: 'time',              accentColor: Colors.accent, iconBg: Colors.accentMuted, iconColor: Colors.accent },
+  pickup_confirmed:  { icon: 'checkmark-circle',  accentColor: Colors.accent, iconBg: Colors.accentMuted, iconColor: Colors.accent },
+  borrow_request:    { icon: 'book',              accentColor: Colors.accent, iconBg: Colors.accentMuted, iconColor: Colors.accent },
+  returned:          { icon: 'checkmark-done',    accentColor: Colors.statusReturned, iconBg: Colors.statusReturnedBg, iconColor: Colors.statusReturned },
+  general:           { icon: 'information-circle', accentColor: Colors.textMuted, iconBg: Colors.surfaceMuted, iconColor: Colors.textSecond },
 };
 
 function formatTime(dateString: string) {
@@ -135,9 +134,9 @@ export default function CustomHeader() {
           {profileImage ? (
             <Image source={{ uri: profileImage }} style={styles.avatarImg} />
           ) : (
-            <LinearGradient colors={['#2e7d32', '#15803d']} style={styles.avatar}>
+            <View style={[styles.avatar, { backgroundColor: Colors.accent }]}>
               <Text style={styles.avatarText}>{user?.name?.charAt(0).toUpperCase()}</Text>
-            </LinearGradient>
+            </View>
           )}
         </TouchableOpacity>
       </View>
@@ -162,8 +161,7 @@ export default function CustomHeader() {
               <ActivityIndicator color={Colors.brand} style={{ paddingVertical: 24 }} />
             ) : notifications.length === 0 ? (
               <View style={styles.notifEmpty}>
-                <Ionicons name="notifications-off-outline" size={36} color={Colors.textMuted} />
-                <Text style={styles.notifEmptyText}>No notifications</Text>
+                <Text style={styles.notifEmptyText}>No notifications yet</Text>
               </View>
             ) : (
               <ScrollView style={styles.notifScroll} showsVerticalScrollIndicator={false}>
@@ -205,9 +203,9 @@ export default function CustomHeader() {
               {profileImage ? (
                 <Image source={{ uri: profileImage }} style={styles.dropdownAvatarImg} />
               ) : (
-                <LinearGradient colors={['#2e7d32', '#15803d']} style={styles.dropdownAvatar}>
+                <View style={[styles.dropdownAvatar, { backgroundColor: Colors.accent }]}>
                   <Text style={styles.dropdownAvatarText}>{user?.name?.charAt(0).toUpperCase()}</Text>
-                </LinearGradient>
+                </View>
               )}
               <View style={styles.dropdownUserInfo}>
                 <Text style={styles.dropdownName} numberOfLines={1}>{user?.name}</Text>
@@ -237,24 +235,24 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 16, paddingVertical: 12,
-    backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: Colors.border,
+    backgroundColor: Colors.surface, borderBottomWidth: 1, borderBottomColor: Colors.border,
     elevation: 4, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 },
   },
   leftSection: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  logoWrap: { width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.brandLight, justifyContent: 'center', alignItems: 'center' },
+  logoWrap: { width: 40, height: 40, borderRadius: 8, backgroundColor: Colors.accentMuted, justifyContent: 'center', alignItems: 'center' },
   title: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary },
   subtitle: { fontSize: 11, color: Colors.textMuted },
   rightSection: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   iconButton: { position: 'relative', padding: 4 },
   badge: {
     position: 'absolute', top: 0, right: 0,
-    backgroundColor: '#ec4899', borderRadius: 10,
+    backgroundColor: Colors.error, borderRadius: 8,
     minWidth: 18, height: 18, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 4,
   },
   badgeText: { color: '#fff', fontSize: 10, fontWeight: '700' },
   profileButton: { marginLeft: 4 },
-  avatar: { width: 34, height: 34, borderRadius: 17, justifyContent: 'center', alignItems: 'center' },
-  avatarImg: { width: 34, height: 34, borderRadius: 17 },
+  avatar: { width: 34, height: 34, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
+  avatarImg: { width: 34, height: 34, borderRadius: 8 },
   avatarText: { color: '#fff', fontSize: 14, fontWeight: '700' },
 
   // Shared overlay
@@ -267,7 +265,7 @@ const styles = StyleSheet.create({
 
   // Notification dropdown
   notifDropdown: {
-    backgroundColor: '#fff', borderRadius: 16, width: 320,
+    backgroundColor: Colors.surface, borderRadius: 8, width: 320,
     elevation: 10, shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 16, shadowOffset: { width: 0, height: 6 },
     overflow: 'hidden', maxHeight: 440,
   },
@@ -300,13 +298,13 @@ const styles = StyleSheet.create({
 
   // Profile dropdown
   dropdown: {
-    backgroundColor: '#fff', borderRadius: 16, width: 260,
+    backgroundColor: Colors.surface, borderRadius: 8, width: 260,
     elevation: 8, shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 }, overflow: 'hidden',
   },
   dropdownHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 },
-  dropdownAvatar: { width: 42, height: 42, borderRadius: 21, justifyContent: 'center', alignItems: 'center' },
-  dropdownAvatarImg: { width: 42, height: 42, borderRadius: 21 },
+  dropdownAvatar: { width: 42, height: 42, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
+  dropdownAvatarImg: { width: 42, height: 42, borderRadius: 8 },
   dropdownAvatarText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   dropdownUserInfo: { flex: 1 },
   dropdownName: { fontSize: 14, fontWeight: '700', color: Colors.textPrimary },

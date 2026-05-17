@@ -1,41 +1,58 @@
-// Color palette mirrored from GapoLibrary web app (tailwind.config.ts)
+// Warm library palette — off-white base, ink text, teal accent, red for critical only
 const Colors = {
+  // Surfaces
+  background: '#F7F5F0',
+  surface: '#FFFFFF',
+  surfaceMuted: '#EFEBE4',
+  border: '#E7E2D9',
+
+  // Typography
+  textPrimary: '#1C1917',
+  textSecond: '#57534E',
+  textMuted: '#A8A29E',
+
+  // Brand / accent (knowledge — deep teal)
+  accent: '#0D6E6E',
+  accentMuted: '#E6F2F2',
+  accentDark: '#0A5555',
+
+  // Semantic aliases (backward-compatible)
+  brand: '#0D6E6E',
+  brandDarker: '#0A5555',
+  brandLight: '#E6F2F2',
+  brandMuted: '#E6F2F2',
+  brandDark: '#0A5555',
+
+  // Status — red reserved for overdue / critical
+  error: '#B91C1C',
+  errorBg: '#FEF2F2',
+  statusReturned: '#78716C',
+  statusReturnedBg: '#F5F5F4',
+
+  // Legacy keys (mapped to new palette; avoid green/orange in UI)
+  success: '#0D6E6E',
+  warning: '#57534E',
+  warningBg: '#EFEBE4',
+
   primary: {
-    50:  '#f0fdf4',
-    100: '#dcfce7',
-    200: '#bbf7d0',
-    300: '#86efac',
-    400: '#4ade80',
-    500: '#22c55e',
-    600: '#16a34a',
-    700: '#15803d',
-    800: '#166534',
-    900: '#14532d',
+    50: '#E6F2F2',
+    100: '#CCE5E5',
+    200: '#99CCCC',
+    300: '#66B2B2',
+    400: '#339999',
+    500: '#0D6E6E',
+    600: '#0A5555',
+    700: '#084444',
+    800: '#063333',
+    900: '#042222',
   },
-  // Semantic aliases
-  brand:       '#16a34a',
-  brandDarker: '#2e7d32', // richer green used on web for gradients/buttons
-  brandLight:  '#f0fdf4',
-  brandMuted:  '#dcfce7',
-  brandDark:   '#15803d',
 
-  // Neutrals
-  background:  '#f0fdf4',
-  surface:     '#ffffff',
-  border:      '#e5e7eb', // slightly softer than before
-  textPrimary: '#111827',
-  textSecond:  '#6b7280',
-  textMuted:   '#9ca3af',
-
-  // Status
-  success:     '#16a34a',
-  error:       '#dc2626',
-  errorBg:     '#fef2f2',
-  warning:     '#854d0e',
-  warningBg:   '#fef9c3',
-
-  // Shadow helpers (used in elevation styles)
-  shadow: '#000',
+  shadow: '#1C1917',
 };
+
+export const Radius = {
+  container: 8,
+  inner: 4,
+} as const;
 
 export default Colors;

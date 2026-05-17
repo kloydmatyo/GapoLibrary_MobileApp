@@ -1,12 +1,19 @@
 import { useEffect, useState, useCallback } from 'react';
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, RefreshControl, ScrollView, TouchableOpacity } from 'react-native';
+import {
+  View, Text, FlatList, StyleSheet, ActivityIndicator,
+  RefreshControl, ScrollView, TouchableOpacity,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { getHistory } from '@/lib/api';
-import Colors from '@/constants/colors';
+import { getHistory, getBooks } from '@/lib/api';
+import Colors, { Radius } from '@/constants/colors';
+import { Fonts } from '@/constants/typography';
 import { useOverdue } from '@/context/OverdueContext';
+import BookCover from '@/components/BookCover';
+import { normalizeLoanStatus, statusBorderColor, LoanDisplayStatus } from '@/lib/loanStatus';
 
 interface HistoryItem {
   _id: string;
+  bookId?: string;
   bookTitle: string;
   bookAuthor: string;
   checkoutDate: string;
@@ -15,24 +22,26 @@ interface HistoryItem {
   status: 'pending_pickup' | 'active' | 'returned' | 'overdue' | 'expired';
   confirmedBy?: string | null;
   returnedTo?: string | null;
+  isbn?: string;
+  coverImageUrl?: string;
 }
 
-const STATUS_CONFIG = {
-  pending_pickup: { color: '#f59e0b', bg: '#fef3c7', label: 'Pending Pickup', icon: 'time-outline' as const },
-  active:         { color: Colors.brand, bg: Colors.brandLight, label: 'Active', icon: 'checkmark-circle-outline' as const },
-  returned:       { color: Colors.success, bg: Colors.primary[50], label: 'Returned', icon: 'checkmark-done-outline' as const },
-  overdue:        { color: Colors.error, bg: Colors.errorBg, label: 'Overdue', icon: 'alert-circle-outline' as const },
-  expired:        { color: '#6b7280', bg: '#f3f4f6', label: 'Expired', icon: 'close-circle-outline' as const },
+const STATUS_LABELS: Record<LoanDisplayStatus, string> = {
+  pending_pickup: 'Awaiting Pickup',
+  active: 'Active',
+  returned: 'Returned',
+  overdue: 'Overdue',
+  expired: 'Expired',
 };
 
 type FilterKey = 'all' | HistoryItem['status'];
 
 const FILTERS: { key: FilterKey; label: string }[] = [
-  { key: 'all',            label: 'All' },
+  { key: 'all', label: 'All' },
   { key: 'pending_pickup', label: 'Awaiting Pickup' },
-  { key: 'active',         label: 'Borrowed' },
-  { key: 'overdue',        label: 'Overdue' },
-  { key: 'returned',       label: 'Returned' },
+  { key: 'active', label: 'Borrowed' },
+  { key: 'overdue', label: 'Overdue' },
+  { key: 'returned', label: 'Returned' },
 ];
 
 export default function HistoryScreen() {
@@ -45,24 +54,28 @@ export default function HistoryScreen() {
 
   const fetchHistory = useCallback(async () => {
     try {
-      const res = await getHistory();
-      const historyData: HistoryItem[] = res.data.history;
+      const [historyRes, booksRes] = await Promise.all([getHistory(), getBooks({})]);
+      const historyData: HistoryItem[] = historyRes.data.history;
+      const bookMeta = new Map<string, { isbn?: string; coverImageUrl?: string }>(
+        (booksRes.data.books ?? []).map((b: { _id: string; isbn?: string; coverImageUrl?: string }) => [
+          b._id,
+          { isbn: b.isbn, coverImageUrl: b.coverImageUrl },
+        ]),
+      );
 
-      // Normalise: treat active-but-past-due as overdue client-side
-      const normalised = historyData.map((item) => ({
-        ...item,
-        status: (
-          item.status === 'active' && new Date(item.dueDate) < new Date()
-            ? 'overdue'
-            : item.status
-        ) as HistoryItem['status'],
-      }));
+      const normalised = historyData.map((item) => {
+        const displayStatus = normalizeLoanStatus(item.status, item.dueDate);
+        const meta = item.bookId ? bookMeta.get(item.bookId) : undefined;
+        return {
+          ...item,
+          status: displayStatus as HistoryItem['status'],
+          isbn: meta?.isbn,
+          coverImageUrl: meta?.coverImageUrl,
+        };
+      });
 
       setHistory(normalised);
-
-      const overdue = normalised.filter((item) => item.status === 'overdue').length;
-      setOverdueCount(overdue);
-
+      setOverdueCount(normalised.filter((item) => item.status === 'overdue').length);
       await refreshOverdueCount();
     } catch (err) {
       console.error('Failed to fetch history:', err);
@@ -70,7 +83,7 @@ export default function HistoryScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [refreshing, refreshOverdueCount]);
+  }, [refreshOverdueCount]);
 
   useEffect(() => {
     fetchHistory();
@@ -88,25 +101,28 @@ export default function HistoryScreen() {
   const countFor = (key: FilterKey) =>
     key === 'all' ? history.length : history.filter((h) => h.status === key).length;
 
-  const fmt = (d: string) => new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
+  const fmt = (d: string) =>
+    new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
 
   const getDaysOverdue = (dueDate: string) => {
-    const due = new Date(dueDate);
-    const now = new Date();
-    const diff = Math.floor((now.getTime() - due.getTime()) / (1000 * 60 * 60 * 24));
+    const diff = Math.floor((Date.now() - new Date(dueDate).getTime()) / 86_400_000);
     return diff > 0 ? diff : 0;
   };
 
   const renderItem = ({ item }: { item: HistoryItem }) => {
-    const cfg = STATUS_CONFIG[item.status];
-    const isOverdue = item.status === 'overdue';
+    const displayStatus = normalizeLoanStatus(item.status, item.dueDate);
+    const isOverdue = displayStatus === 'overdue';
     const daysOverdue = isOverdue ? getDaysOverdue(item.dueDate) : 0;
+    const borderColor = statusBorderColor(displayStatus);
 
     return (
-      <View style={[styles.item, isOverdue && styles.overdueItem]}>
-        <View style={[styles.iconWrap, { backgroundColor: cfg.bg }]}>
-          <Ionicons name={cfg.icon} size={22} color={cfg.color} />
-        </View>
+      <View style={[styles.item, { borderLeftColor: borderColor }]}>
+        <BookCover
+          isbn={item.isbn}
+          coverImageUrl={item.coverImageUrl}
+          width={48}
+          height={64}
+        />
         <View style={styles.info}>
           <Text style={styles.bookTitle} numberOfLines={2}>{item.bookTitle}</Text>
           <Text style={styles.author}>{item.bookAuthor}</Text>
@@ -118,36 +134,66 @@ export default function HistoryScreen() {
           {item.returnDate && <Text style={styles.date}>Returned: {fmt(item.returnDate)}</Text>}
           {item.confirmedBy && (
             <Text style={styles.staffInfo}>
-              <Text style={styles.staffLabel}>Pickup confirmed by: </Text>{item.confirmedBy}
+              <Text style={styles.staffLabel}>Pickup confirmed by: </Text>
+              {item.confirmedBy}
             </Text>
           )}
           {item.returnedTo && (
             <Text style={styles.staffInfo}>
-              <Text style={styles.staffLabel}>Returned to: </Text>{item.returnedTo}
+              <Text style={styles.staffLabel}>Returned to: </Text>
+              {item.returnedTo}
             </Text>
           )}
         </View>
-        <View style={[styles.badge, { backgroundColor: cfg.bg }]}>
-          <Text style={[styles.badgeText, { color: cfg.color }]}>{cfg.label}</Text>
+        <View style={styles.badge}>
+          <Text
+            style={[
+              styles.badgeText,
+              isOverdue && styles.badgeTextOverdue,
+              displayStatus === 'returned' && styles.badgeTextMuted,
+            ]}
+          >
+            {STATUS_LABELS[displayStatus]}
+          </Text>
         </View>
       </View>
     );
   };
 
-  if (loading) return <ActivityIndicator style={{ marginTop: 60 }} size="large" color={Colors.brand} />;
+  if (loading) {
+    return (
+      <ActivityIndicator
+        style={{ marginTop: 60 }}
+        size="large"
+        color={Colors.accent}
+      />
+    );
+  }
+
+  if (history.length === 0) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.emptyFull}>
+          <Text style={styles.emptyTitle}>No borrowing history yet</Text>
+          <Text style={styles.emptyBody}>
+            Books you borrow will appear here with due dates and return status.
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       {overdueCount > 0 && (
         <View style={styles.overdueAlert}>
-          <Ionicons name="warning" size={20} color={Colors.error} />
+          <Ionicons name="alert-circle" size={20} color={Colors.error} />
           <Text style={styles.overdueAlertText}>
             You have {overdueCount} overdue book{overdueCount > 1 ? 's' : ''}
           </Text>
         </View>
       )}
 
-      {/* Filter chips */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -157,6 +203,7 @@ export default function HistoryScreen() {
         {FILTERS.map((f) => {
           const isActive = activeFilter === f.key;
           const count = countFor(f.key);
+          if (f.key !== 'all' && count === 0) return null;
           return (
             <TouchableOpacity
               key={f.key}
@@ -182,13 +229,12 @@ export default function HistoryScreen() {
         renderItem={renderItem}
         contentContainerStyle={styles.list}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.brand]} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.accent]} />
         }
         ListEmptyComponent={
-          <View style={styles.emptyWrap}>
-            <Ionicons name="time-outline" size={48} color={Colors.border} />
-            <Text style={styles.empty}>
-              {activeFilter === 'all' ? 'No borrowing history yet.' : `No ${FILTERS.find(f => f.key === activeFilter)?.label.toLowerCase()} loans.`}
+          <View style={styles.emptyFilter}>
+            <Text style={styles.emptyFilterText}>
+              No {FILTERS.find((f) => f.key === activeFilter)?.label.toLowerCase()} loans.
             </Text>
           </View>
         }
@@ -207,20 +253,17 @@ const styles = StyleSheet.create({
     padding: 12,
     marginHorizontal: 16,
     marginTop: 16,
-    borderRadius: 10,
+    borderRadius: Radius.container,
     borderLeftWidth: 4,
     borderLeftColor: Colors.error,
   },
   overdueAlertText: {
     flex: 1,
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: Fonts.bodySemiBold,
     color: Colors.error,
   },
-  filterScrollView: {
-    flexGrow: 0,
-    flexShrink: 0,
-  },
+  filterScrollView: { flexGrow: 0, flexShrink: 0 },
   filterScroll: {
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -233,44 +276,114 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: Radius.container,
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.surface,
     height: 36,
   },
   filterChipActive: {
-    backgroundColor: Colors.brand,
-    borderColor: Colors.brand,
+    backgroundColor: Colors.accent,
+    borderColor: Colors.accent,
   },
   filterChipText: {
-    fontSize: 13, fontWeight: '700', color: Colors.textPrimary,
+    fontSize: 13,
+    fontFamily: Fonts.bodySemiBold,
+    color: Colors.textPrimary,
   },
   filterChipTextActive: { color: '#fff' },
   filterCount: {
-    backgroundColor: '#f3f4f6', borderRadius: 10,
-    paddingHorizontal: 6, paddingVertical: 1,
+    backgroundColor: Colors.surfaceMuted,
+    borderRadius: Radius.inner,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
   },
   filterCountActive: { backgroundColor: 'rgba(255,255,255,0.25)' },
-  filterCountText: { fontSize: 11, fontWeight: '700', color: Colors.textMuted },
+  filterCountText: {
+    fontSize: 11,
+    fontFamily: Fonts.bodyBold,
+    color: Colors.textMuted,
+  },
   filterCountTextActive: { color: '#fff' },
   list: { padding: 16 },
   item: {
-    backgroundColor: Colors.surface, borderRadius: 20, padding: 14, marginBottom: 10,
-    flexDirection: 'row', alignItems: 'flex-start', gap: 12,
-    elevation: 4, shadowColor: Colors.shadow, shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 4 },
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.container,
+    padding: 12,
+    marginBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderLeftWidth: 4,
   },
-  overdueItem: { borderWidth: 1.5, borderColor: Colors.error },
-  iconWrap: { width: 42, height: 42, borderRadius: 21, justifyContent: 'center', alignItems: 'center' },
   info: { flex: 1 },
-  bookTitle: { fontSize: 14, fontWeight: '800', color: Colors.textPrimary, marginBottom: 2 },
-  author: { fontSize: 12, color: Colors.textSecond, marginBottom: 4, fontWeight: '600' },
-  date: { fontSize: 11, color: Colors.textMuted },
-  overdueDate: { color: Colors.error, fontWeight: '700' },
-  staffInfo: { fontSize: 11, color: Colors.textMuted, marginTop: 2 },
-  staffLabel: { fontWeight: '700', color: Colors.textSecond },
-  badge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10, alignSelf: 'flex-start' },
-  badgeText: { fontSize: 11, fontWeight: '800' },
-  emptyWrap: { alignItems: 'center', marginTop: 60 },
-  empty: { marginTop: 12, color: Colors.textMuted, fontSize: 14 },
+  bookTitle: {
+    fontSize: 14,
+    fontFamily: Fonts.bodySemiBold,
+    color: Colors.textPrimary,
+    marginBottom: 2,
+  },
+  author: {
+    fontSize: 12,
+    fontFamily: Fonts.body,
+    color: Colors.textSecond,
+    marginBottom: 4,
+  },
+  date: {
+    fontSize: 11,
+    fontFamily: Fonts.body,
+    color: Colors.textMuted,
+  },
+  overdueDate: { color: Colors.error, fontFamily: Fonts.bodySemiBold },
+  staffInfo: {
+    fontSize: 11,
+    fontFamily: Fonts.body,
+    color: Colors.textMuted,
+    marginTop: 2,
+  },
+  staffLabel: { fontFamily: Fonts.bodySemiBold, color: Colors.textSecond },
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: Radius.inner,
+    backgroundColor: Colors.surfaceMuted,
+    alignSelf: 'flex-start',
+  },
+  badgeText: {
+    fontSize: 10,
+    fontFamily: Fonts.bodyBold,
+    color: Colors.accent,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  badgeTextOverdue: { color: Colors.error },
+  badgeTextMuted: { color: Colors.statusReturned },
+  emptyFull: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontFamily: Fonts.heading,
+    color: Colors.textPrimary,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  emptyBody: {
+    fontSize: 14,
+    fontFamily: Fonts.body,
+    color: Colors.textSecond,
+    textAlign: 'center',
+    lineHeight: 21,
+  },
+  emptyFilter: { paddingTop: 48, paddingHorizontal: 24 },
+  emptyFilterText: {
+    fontSize: 14,
+    fontFamily: Fonts.body,
+    color: Colors.textSecond,
+    textAlign: 'center',
+  },
 });

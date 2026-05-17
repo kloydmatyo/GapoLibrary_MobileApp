@@ -6,6 +6,7 @@ import * as Linking from 'expo-linking';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { OverdueProvider } from '@/context/OverdueContext';
 import { BookAvailabilityProvider } from '@/context/BookAvailabilityContext';
+import FontsProvider from '@/components/FontsProvider';
 
 function RootLayoutNav() {
   const { user, loading } = useAuth();
@@ -85,12 +86,14 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <OverdueProvider>
-        <BookAvailabilityProvider>
-          <RootLayoutNav />
-        </BookAvailabilityProvider>
-      </OverdueProvider>
-    </AuthProvider>
+    <FontsProvider>
+      <AuthProvider>
+        <OverdueProvider>
+          <BookAvailabilityProvider>
+            <RootLayoutNav />
+          </BookAvailabilityProvider>
+        </OverdueProvider>
+      </AuthProvider>
+    </FontsProvider>
   );
 }

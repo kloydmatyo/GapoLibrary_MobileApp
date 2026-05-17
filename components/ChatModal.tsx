@@ -5,7 +5,6 @@ import {
   Modal, Animated, Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { sendChatMessage } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import Colors from '@/constants/colors';
@@ -103,9 +102,9 @@ export default function ChatModal({ visible, onClose }: Props) {
     return (
       <View style={[styles.msgRow, isUser ? styles.msgRowUser : styles.msgRowAssistant]}>
         {!isUser && (
-          <LinearGradient colors={['#2e7d32', '#15803d']} style={styles.botAvatar}>
+          <View style={[styles.botAvatar, { backgroundColor: Colors.accent }]}>
             <Ionicons name="sparkles" size={14} color="#fff" />
-          </LinearGradient>
+          </View>
         )}
         <View style={[styles.bubble, isUser ? styles.bubbleUser : styles.bubbleAssistant]}>
           <Text style={[styles.bubbleText, isUser ? styles.bubbleTextUser : styles.bubbleTextAssistant]}>
@@ -128,7 +127,7 @@ export default function ChatModal({ visible, onClose }: Props) {
         <View style={styles.handle} />
 
         {/* Header */}
-        <LinearGradient colors={['#2e7d32', '#16a34a']} style={styles.header}>
+        <View style={[styles.header, { backgroundColor: Colors.accent }]}>
           <View style={styles.headerLeft}>
             <View style={styles.headerIconWrap}>
               <Ionicons name="sparkles" size={20} color="#fff" />
@@ -144,7 +143,7 @@ export default function ChatModal({ visible, onClose }: Props) {
           <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
             <Ionicons name="close" size={22} color="rgba(255,255,255,0.85)" />
           </TouchableOpacity>
-        </LinearGradient>
+        </View>
 
         <KeyboardAvoidingView
           style={styles.flex}
@@ -161,9 +160,9 @@ export default function ChatModal({ visible, onClose }: Props) {
             onContentSizeChange={scrollToBottom}
             ListFooterComponent={loading ? (
               <View style={styles.msgRowAssistant}>
-                <LinearGradient colors={['#2e7d32', '#15803d']} style={styles.botAvatar}>
+                <View style={[styles.botAvatar, { backgroundColor: Colors.accent }]}>
                   <Ionicons name="sparkles" size={14} color="#fff" />
-                </LinearGradient>
+                </View>
                 <View style={styles.bubbleAssistant}>
                   <ActivityIndicator size="small" color={Colors.brand} />
                 </View>
@@ -224,7 +223,7 @@ const styles = StyleSheet.create({
     position: 'absolute', bottom: 0, left: 0, right: 0,
     height: SCREEN_H * 0.82,
     backgroundColor: Colors.background,
-    borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    borderTopLeftRadius: 8, borderTopRightRadius: 8,
     overflow: 'hidden',
     elevation: 20, shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 20,
   },
@@ -246,8 +245,8 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: 16, fontWeight: '800', color: '#fff' },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 },
-  statusDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#86efac' },
-  statusDotLoading: { backgroundColor: '#fde68a' },
+  statusDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.7)' },
+  statusDotLoading: { backgroundColor: 'rgba(255,255,255,0.4)' },
   statusText: { fontSize: 11, color: 'rgba(255,255,255,0.8)', fontWeight: '600' },
   closeBtn: {
     width: 34, height: 34, borderRadius: 17,
@@ -263,8 +262,8 @@ const styles = StyleSheet.create({
     width: 30, height: 30, borderRadius: 15,
     justifyContent: 'center', alignItems: 'center', flexShrink: 0,
   },
-  bubble: { maxWidth: '78%', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 20 },
-  bubbleUser: { backgroundColor: Colors.brandDarker, borderBottomRightRadius: 4 },
+  bubble: { maxWidth: '78%', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8 },
+  bubbleUser: { backgroundColor: Colors.accentDark, borderBottomRightRadius: 4 },
   bubbleAssistant: {
     backgroundColor: Colors.surface, borderBottomLeftRadius: 4,
     borderWidth: 1, borderColor: Colors.border,
@@ -286,7 +285,7 @@ const styles = StyleSheet.create({
   quickScroll: { gap: 8, paddingBottom: 4 },
   quickChip: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: Colors.background, borderRadius: 20,
+    backgroundColor: Colors.background, borderRadius: 8,
     paddingHorizontal: 14, paddingVertical: 8,
     borderWidth: 1, borderColor: Colors.border,
   },
@@ -301,14 +300,14 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1, backgroundColor: Colors.background,
-    borderRadius: 24, paddingHorizontal: 16, paddingVertical: 10,
+    borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10,
     borderWidth: 1.5, borderColor: Colors.border,
     fontSize: 14, color: Colors.textPrimary, maxHeight: 100,
   },
   sendBtn: {
-    width: 44, height: 44, borderRadius: 22,
-    backgroundColor: Colors.brandDarker, justifyContent: 'center', alignItems: 'center',
-    elevation: 4, shadowColor: '#2e7d32', shadowOpacity: 0.35, shadowRadius: 8, shadowOffset: { width: 0, height: 4 },
+    width: 44, height: 44, borderRadius: 8,
+    backgroundColor: Colors.accent, justifyContent: 'center', alignItems: 'center',
+    elevation: 4, shadowColor: Colors.shadow, shadowOpacity: 0.15, shadowRadius: 8, shadowOffset: { width: 0, height: 4 },
   },
   sendBtnDisabled: { opacity: 0.4 },
 });

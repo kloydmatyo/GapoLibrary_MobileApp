@@ -5,13 +5,31 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { getStaffList, submitRating } from '@/lib/api';
+import { getCirculationHistory, getMyRatings, submitRating } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
 import Colors from '@/constants/colors';
 
-interface StaffMember {
-  patronId: string;
-  name: string;
-  role: string;
+interface Transaction {
+  _id: string;
+  bookTitle: string;
+  bookAuthor: string;
+  confirmedBy?: string;
+  returnedTo?: string;
+  pickupConfirmedAt?: string;
+  returnDate?: string;
+  status: string;
+  checkoutDate: string;
+  pickupConfirmedBy?: string;
+  checkedInBy?: string;
+  checkedOutBy?: string;
+}
+
+interface RatableTransaction extends Transaction {
+  staffId: string;
+  staffName: string;
+  transactionType: 'pickup' | 'return';
+  transactionDate: string;
+  alreadyRated: boolean;
 }
 
 const SCORE_LABELS: Record<number, string> = {
@@ -36,32 +54,112 @@ function StarRow({ value, onChange }: { value: number; onChange: (v: number) => 
 
 export default function RateScreen() {
   const router = useRouter();
-  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const { user, loading: authLoading } = useAuth();
+  const [transactions, setTransactions] = useState<RatableTransaction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState<StaffMember | null>(null);
+  const [selected, setSelected] = useState<RatableTransaction | null>(null);
   const [score, setScore] = useState(0);
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
-    getStaffList()
-      .then((res) => setStaff(res.data.staff || []))
-      .catch(() => Alert.alert('Error', 'Could not load librarians.'))
-      .finally(() => setLoading(false));
-  }, []);
+    // Only load transactions if user is authenticated
+    if (!authLoading && user) {
+      loadTransactions();
+    } else if (!authLoading && !user) {
+      // User is not authenticated, redirect to login
+      router.replace('/login');
+    }
+  }, [authLoading, user]);
+
+  const loadTransactions = async () => {
+    setLoading(true);
+    try {
+      const [historyRes, ratingsRes] = await Promise.all([
+        getCirculationHistory(),
+        getMyRatings(),
+      ]);
+
+      const history = historyRes.data.history || [];
+      const ratedTransactionIds = new Set(ratingsRes.data.ratedTransactionIds || []);
+
+      // Filter for completed transactions with staff involvement
+      const ratableTransactions: RatableTransaction[] = [];
+
+      history.forEach((tx: Transaction) => {
+        // Check if transaction is completed
+        const isCompleted = Boolean(tx.returnDate || tx.pickupConfirmedAt || tx.status === 'returned');
+        if (!isCompleted) return;
+
+        // Check for pickup transaction
+        if (tx.pickupConfirmedBy) {
+          const alreadyRated = ratedTransactionIds.has(tx._id);
+          ratableTransactions.push({
+            ...tx,
+            staffId: tx.pickupConfirmedBy,
+            staffName: tx.confirmedBy || 'Unknown Staff',
+            transactionType: 'pickup',
+            transactionDate: tx.pickupConfirmedAt || tx.checkoutDate,
+            alreadyRated,
+          });
+        }
+
+        // Check for return transaction (only if different from pickup staff)
+        if (tx.checkedInBy && tx.checkedInBy !== tx.pickupConfirmedBy) {
+          const alreadyRated = ratedTransactionIds.has(tx._id);
+          ratableTransactions.push({
+            ...tx,
+            staffId: tx.checkedInBy,
+            staffName: tx.returnedTo || 'Unknown Staff',
+            transactionType: 'return',
+            transactionDate: tx.returnDate,
+            alreadyRated,
+          });
+        }
+      });
+
+      // Sort by date descending (most recent first)
+      ratableTransactions.sort(
+        (a, b) => new Date(b.transactionDate).getTime() - new Date(a.transactionDate).getTime()
+      );
+
+      setTransactions(ratableTransactions);
+    } catch (err: any) {
+      // Check if it's a 401 error
+      if (err.response?.status === 401) {
+        Alert.alert('Session Expired', 'Please log in again to continue.');
+        router.replace('/login');
+      } else {
+        Alert.alert('Error', 'Could not load transactions. Please try again.');
+        console.error(err);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  };
 
   const handleSubmit = async () => {
     if (!selected || score === 0) {
-      Alert.alert('Incomplete', 'Please select a librarian and give a star rating.');
+      Alert.alert('Incomplete', 'Please select a transaction and give a star rating.');
       return;
     }
     setSubmitting(true);
     try {
-      await submitRating(selected.patronId, score, comment.trim() || undefined);
+      await submitRating(selected.staffId, score, selected._id, comment.trim() || undefined);
       setSubmitted(true);
     } catch (err: any) {
-      Alert.alert('Error', err?.response?.data?.error || 'Failed to submit rating.');
+      if (err.response?.status === 401) {
+        Alert.alert('Session Expired', 'Please log in again to continue.');
+        router.replace('/login');
+      } else {
+        Alert.alert('Error', err?.response?.data?.error || 'Failed to submit rating.');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -72,7 +170,17 @@ export default function RateScreen() {
     setScore(0);
     setComment('');
     setSubmitted(false);
+    loadTransactions();
   };
+
+  // Show loading while auth is being determined
+  if (authLoading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator color={Colors.brand} size="large" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -95,7 +203,7 @@ export default function RateScreen() {
             Your rating has been submitted anonymously. Your identity is never stored.
           </Text>
           <TouchableOpacity style={styles.rateAnotherBtn} onPress={reset}>
-            <Text style={styles.rateAnotherText}>Rate another librarian</Text>
+            <Text style={styles.rateAnotherText}>Rate another transaction</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -108,42 +216,82 @@ export default function RateScreen() {
             </Text>
           </View>
 
-          {/* Select librarian */}
-          <Text style={styles.sectionLabel}>Select a librarian</Text>
           {loading ? (
             <ActivityIndicator color={Colors.brand} style={{ marginVertical: 24 }} />
+          ) : transactions.length === 0 ? (
+            <View style={styles.emptyStateContainer}>
+              <Ionicons name="checkmark-done-outline" size={48} color={Colors.textMuted} />
+              <Text style={styles.emptyStateTitle}>No transactions to rate</Text>
+              <Text style={styles.emptyStateText}>
+                You can rate librarians once you complete a transaction with the library.
+              </Text>
+            </View>
           ) : (
-            staff.map((s) => {
-              const isSelected = selected?.patronId === s.patronId;
-              const initials = s.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
-              return (
-                <TouchableOpacity
-                  key={s.patronId}
-                  style={[styles.staffCard, isSelected && styles.staffCardSelected]}
-                  onPress={() => { setSelected(s); setScore(0); }}
-                >
-                  <View style={[styles.avatar, isSelected && styles.avatarSelected]}>
-                    <Text style={[styles.avatarText, isSelected && styles.avatarTextSelected]}>
-                      {initials}
-                    </Text>
-                  </View>
-                  <View style={styles.staffInfo}>
-                    <Text style={styles.staffName}>{s.name}</Text>
-                    <Text style={styles.staffRole}>{s.role}</Text>
-                  </View>
-                  {isSelected && (
-                    <Ionicons name="checkmark-circle" size={24} color={Colors.brand} />
-                  )}
-                </TouchableOpacity>
-              );
-            })
+            <>
+              {/* Select transaction */}
+              <Text style={styles.sectionLabel}>Select a transaction</Text>
+              {transactions.map((tx) => {
+                const isSelected = selected?._id === tx._id;
+                return (
+                  <TouchableOpacity
+                    key={`${tx._id}-${tx.staffId}-${tx.transactionType}`}
+                    style={[
+                      styles.transactionCard,
+                      isSelected && styles.transactionCardSelected,
+                      tx.alreadyRated && styles.transactionCardDisabled,
+                    ]}
+                    onPress={() => !tx.alreadyRated && setSelected(tx)}
+                    disabled={tx.alreadyRated}
+                  >
+                    <View style={styles.transactionHeader}>
+                      <View style={styles.bookInfo}>
+                        <Text style={styles.bookTitle} numberOfLines={1}>
+                          {tx.bookTitle}
+                        </Text>
+                        <Text style={styles.bookAuthor} numberOfLines={1}>
+                          {tx.bookAuthor}
+                        </Text>
+                      </View>
+                      {isSelected && (
+                        <Ionicons name="checkmark-circle" size={24} color={Colors.brand} />
+                      )}
+                    </View>
+
+                    <View style={styles.transactionDetails}>
+                      <View style={styles.detailRow}>
+                        <Ionicons name="person-outline" size={16} color={Colors.textSecond} />
+                        <Text style={styles.detailText}>{tx.staffName}</Text>
+                      </View>
+                      <View style={styles.detailRow}>
+                        <Ionicons
+                          name={tx.transactionType === 'pickup' ? 'arrow-down-outline' : 'arrow-up-outline'}
+                          size={16}
+                          color={Colors.textSecond}
+                        />
+                        <Text style={styles.detailText}>
+                          {tx.transactionType === 'pickup' ? 'Pickup' : 'Return'} •{' '}
+                          {formatDate(tx.transactionDate)}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {tx.alreadyRated && (
+                      <View style={styles.ratedBadge}>
+                        <Ionicons name="star" size={12} color="#fff" />
+                        <Text style={styles.ratedBadgeText}>Already rated</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </>
           )}
 
           {/* Star rating */}
-          {selected && (
+          {selected && !transactions.every((t) => t.alreadyRated) && (
             <>
               <Text style={styles.sectionLabel}>
-                How would you rate {selected.name.split(' ')[0]}?
+                How would you rate {selected.staffName.split(' ')[0]}?
               </Text>
               <StarRow value={score} onChange={setScore} />
               {score > 0 && (
@@ -209,24 +357,42 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: 15, fontWeight: '700', color: Colors.textPrimary, marginBottom: 12, marginTop: 8,
   },
-  staffCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
+  transactionCard: {
     backgroundColor: Colors.surface, borderRadius: 14, padding: 14,
     marginBottom: 10, borderWidth: 1, borderColor: Colors.border,
+    opacity: 1,
   },
-  staffCardSelected: {
+  transactionCardSelected: {
     borderColor: Colors.brand, backgroundColor: Colors.brandMuted,
   },
-  avatar: {
-    width: 44, height: 44, borderRadius: 12,
-    backgroundColor: Colors.brandLight, justifyContent: 'center', alignItems: 'center',
+  transactionCardDisabled: {
+    opacity: 0.5,
   },
-  avatarSelected: { backgroundColor: Colors.brand },
-  avatarText: { fontSize: 15, fontWeight: '800', color: Colors.brand },
-  avatarTextSelected: { color: '#fff' },
-  staffInfo: { flex: 1 },
-  staffName: { fontSize: 15, fontWeight: '700', color: Colors.textPrimary },
-  staffRole: { fontSize: 13, color: Colors.textSecond, marginTop: 2, textTransform: 'capitalize' },
+  transactionHeader: {
+    flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  bookInfo: { flex: 1, marginRight: 8 },
+  bookTitle: { fontSize: 15, fontWeight: '700', color: Colors.textPrimary },
+  bookAuthor: { fontSize: 13, color: Colors.textSecond, marginTop: 2 },
+  transactionDetails: { gap: 6 },
+  detailRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  detailText: { fontSize: 13, color: Colors.textSecond },
+  ratedBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: '#10b981', paddingHorizontal: 8, paddingVertical: 4,
+    borderRadius: 6, alignSelf: 'flex-start', marginTop: 8,
+  },
+  ratedBadgeText: { fontSize: 12, fontWeight: '600', color: '#fff' },
+  emptyStateContainer: {
+    alignItems: 'center', justifyContent: 'center', paddingVertical: 40,
+  },
+  emptyStateTitle: {
+    fontSize: 18, fontWeight: '700', color: Colors.textPrimary, marginTop: 12, marginBottom: 6,
+  },
+  emptyStateText: {
+    fontSize: 14, color: Colors.textSecond, textAlign: 'center', lineHeight: 20,
+  },
   starRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
   starBtn: { padding: 4 },
   scoreLabel: { fontSize: 14, fontWeight: '700', color: '#d97706', marginBottom: 16 },

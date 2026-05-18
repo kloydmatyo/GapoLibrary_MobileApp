@@ -17,6 +17,16 @@ interface AuthContextType {
   signOut: () => Promise<void>;
 }
 
+function isSessionTokenValid(token: string): boolean {
+  try {
+    const decoded = typeof globalThis.atob === 'function' ? globalThis.atob(token) : '';
+    const parsed = JSON.parse(decoded);
+    return typeof parsed.timestamp === 'number' && Date.now() - parsed.timestamp <= 7 * 24 * 60 * 60 * 1000;
+  } catch {
+    return false;
+  }
+}
+
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -25,8 +35,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     (async () => {
-      const stored = await SecureStore.getItemAsync('user_data');
-      if (stored) setUser(JSON.parse(stored));
+      const [storedUser, storedToken] = await Promise.all([
+        SecureStore.getItemAsync('user_data'),
+        SecureStore.getItemAsync('session_token'),
+      ]);
+
+      if (storedUser && storedToken && isSessionTokenValid(storedToken)) {
+        setUser(JSON.parse(storedUser));
+      } else {
+        if (storedUser) {
+          await SecureStore.deleteItemAsync('user_data');
+        }
+        if (storedToken && !isSessionTokenValid(storedToken)) {
+          await SecureStore.deleteItemAsync('session_token');
+        }
+        setUser(null);
+      }
       setLoading(false);
     })();
   }, []);

@@ -13,8 +13,17 @@ const api = axios.create({
 api.interceptors.request.use(async (config) => {
   const token = await SecureStore.getItemAsync('session_token');
   if (token) {
-    config.headers['Authorization'] = `Bearer ${token}`;
-    config.headers['Cookie'] = `session=${token}`;
+    const headers: any = config.headers ?? {};
+
+    if (typeof headers.set === 'function') {
+      headers.set('Authorization', `Bearer ${token}`);
+      headers.set('Cookie', `session=${token}`);
+    } else {
+      headers.Authorization = `Bearer ${token}`;
+      headers.Cookie = `session=${token}`;
+    }
+
+    config.headers = headers;
   }
   return config;
 });
@@ -86,8 +95,14 @@ export const savePreferences = (data: {
 export const getStaffList = () =>
   api.get('/ratings/staff');
 
-export const submitRating = (staffId: string, score: number, comment?: string) =>
-  api.post('/ratings', { staffId, score, comment });
+export const getCirculationHistory = () =>
+  api.get('/circulation/history');
+
+export const getMyRatings = () =>
+  api.get('/ratings/my-ratings');
+
+export const submitRating = (staffId: string, score: number, transactionId: string, comment?: string) =>
+  api.post('/ratings', { staffId, score, transactionId, comment });
 
 // --- Email Verification ---
 export const resendVerificationEmail = (email: string) =>

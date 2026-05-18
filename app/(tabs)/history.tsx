@@ -50,7 +50,7 @@ export default function HistoryScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [overdueCount, setOverdueCount] = useState(0);
   const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
-  const { refreshOverdueCount } = useOverdue();
+  const { setOverdueCount: setGlobalOverdueCount } = useOverdue();
 
   const fetchHistory = useCallback(async () => {
     try {
@@ -75,15 +75,16 @@ export default function HistoryScreen() {
       });
 
       setHistory(normalised);
-      setOverdueCount(normalised.filter((item) => item.status === 'overdue').length);
-      await refreshOverdueCount();
+      const overdue = normalised.filter((item) => item.status === 'overdue').length;
+      setOverdueCount(overdue);
+      setGlobalOverdueCount(overdue);
     } catch (err) {
       console.error('Failed to fetch history:', err);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [refreshOverdueCount]);
+  }, [setGlobalOverdueCount]);
 
   useEffect(() => {
     fetchHistory();

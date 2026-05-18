@@ -1,5 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { AppState, AppStateStatus } from 'react-native';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 import api from '@/lib/api';
 
 interface BookAvailability {
@@ -27,7 +26,6 @@ const BookAvailabilityContext = createContext<BookAvailabilityContextType>({
 export function BookAvailabilityProvider({ children }: { children: React.ReactNode }) {
   const [availability, setAvailability] = useState<BookAvailability>({});
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [appState, setAppState] = useState<AppStateStatus>(AppState.currentState);
 
   // Update a single book's availability
   const updateBookAvailability = useCallback(async (bookId: string) => {
@@ -56,30 +54,6 @@ export function BookAvailabilityProvider({ children }: { children: React.ReactNo
     Promise.all(bookIds.map(id => updateBookAvailability(id)))
       .finally(() => setIsRefreshing(false));
   }, [availability, updateBookAvailability]);
-
-  // Auto-refresh when app comes to foreground
-  useEffect(() => {
-    const subscription = AppState.addEventListener('change', (nextAppState) => {
-      if (appState.match(/inactive|background/) && nextAppState === 'active') {
-        // App has come to the foreground, refresh availability
-        refreshAllBooks();
-      }
-      setAppState(nextAppState);
-    });
-
-    return () => subscription.remove();
-  }, [appState, refreshAllBooks]);
-
-  // Periodic refresh every 30 seconds for tracked books
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (Object.keys(availability).length > 0) {
-        refreshAllBooks();
-      }
-    }, 30000); // 30 seconds
-
-    return () => clearInterval(interval);
-  }, [availability, refreshAllBooks]);
 
   return (
     <BookAvailabilityContext.Provider

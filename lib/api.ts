@@ -7,11 +7,26 @@ export const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'https://your-gapolib
 
 const api = axios.create({
   baseURL: BASE_URL,
-  timeout: 10000,
+  timeout: 30000,
 });
 
+let sessionTokenCache: string | null = null;
+
+export const clearTokenCache = () => {
+  sessionTokenCache = null;
+};
+
+async function getSessionToken() {
+  if (sessionTokenCache !== null) {
+    return sessionTokenCache;
+  }
+
+  sessionTokenCache = await SecureStore.getItemAsync('session_token');
+  return sessionTokenCache;
+}
+
 api.interceptors.request.use(async (config) => {
-  const token = await SecureStore.getItemAsync('session_token');
+  const token = await getSessionToken();
   if (token) {
     const headers: any = config.headers ?? {};
 

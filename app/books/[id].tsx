@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, Image,
+  View, Text, StyleSheet, ScrollView, Image, Alert,
   ActivityIndicator, TouchableOpacity,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { getBook, getHistory, toggleBookmark, getBookmarks, getReservations, getBookReviews } from '@/lib/api';
+import { getBook, toggleBookmark } from '@/lib/api';
 import { useBookAvailability } from '@/context/BookAvailabilityContext';
 import Colors, { Radius } from '@/constants/colors';
 import { Fonts } from '@/constants/typography';
@@ -65,45 +65,20 @@ export default function BookDetailScreen() {
   useEffect(() => {
     const loadBook = async () => {
       try {
-        const [bookRes, historyRes, bookmarkIds, reservationsRes, reviewsRes] = await Promise.all([
-          getBook(id),
-          getHistory(),
-          getBookmarks(),
-          getReservations(),
-          getBookReviews(id),
-        ]);
-        setBook(bookRes.data.book);
-        await updateBookAvailability(id);
+        const bookRes = await getBook(id);
+        const data = bookRes.data ?? {};
+        const loadedBook = data.book ?? data;
 
-        const reviewPayload = reviewsRes?.data ?? {};
-        setReviews(reviewPayload.reviews ?? []);
-        setAvgRating(Number(reviewPayload.avg ?? 0));
-        setTotalReviews(Number(reviewPayload.total ?? 0));
-        setRatingDist(Array.isArray(reviewPayload.dist) ? reviewPayload.dist : [0, 0, 0, 0, 0]);
+        setBook(loadedBook);
 
-        const history = historyRes.data.history ?? [];
-
-        const activelyBorrowed = history.some(
-          (h: any) =>
-            h.bookId === id &&
-            ['active', 'pending_pickup'].includes(h.status)
-        );
-
-        const hasEverBorrowed = history.some(
-          (h: any) =>
-            h.bookId === id &&
-            ['active', 'pending_pickup', 'returned', 'overdue'].includes(h.status)
-        );
-
-        setAlreadyBorrowed(activelyBorrowed);
-        setCanReview(hasEverBorrowed);
-        setBookmarked(bookmarkIds.includes(id));
-
-        // Check if already in queue for this book
-        const queued = (reservationsRes.data.reservations ?? []).some(
-          (r: any) => r.bookId === id && r.status === 'pending'
-        );
-        setAlreadyQueued(queued);
+        setAlreadyBorrowed(Boolean(data.alreadyBorrowed));
+        setAlreadyQueued(Boolean(data.alreadyQueued));
+        setCanReview(Boolean(data.canReview));
+        setBookmarked(Boolean(data.bookmarked));
+        setReviews(Array.isArray(data.reviews) ? data.reviews : []);
+        setAvgRating(Number(data.avg ?? 0));
+        setTotalReviews(Number(data.total ?? 0));
+        setRatingDist(Array.isArray(data.dist) ? data.dist : [0, 0, 0, 0, 0]);
       } catch {
         Alert.alert('Error', 'Could not load book details.');
       } finally {
@@ -112,13 +87,7 @@ export default function BookDetailScreen() {
     };
 
     loadBook();
-
-    const interval = setInterval(() => {
-      updateBookAvailability(id);
-    }, 15000);
-
-    return () => clearInterval(interval);
-  }, [id, reviewUpdated, updateBookAvailability]);
+  }, [id, reviewUpdated]);
 
 
   const handleBookmark = async () => {

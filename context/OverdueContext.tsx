@@ -5,11 +5,13 @@ import { useAuth } from './AuthContext';
 interface OverdueContextType {
   overdueCount: number;
   refreshOverdueCount: () => Promise<void>;
+  setOverdueCount: React.Dispatch<React.SetStateAction<number>>;
 }
 
 const OverdueContext = createContext<OverdueContextType>({
   overdueCount: 0,
   refreshOverdueCount: async () => {},
+  setOverdueCount: () => {},
 });
 
 export function OverdueProvider({ children }: { children: React.ReactNode }) {
@@ -39,8 +41,8 @@ export function OverdueProvider({ children }: { children: React.ReactNode }) {
     if (user) {
       refreshOverdueCount();
       
-      // Refresh every 5 minutes
-      const interval = setInterval(refreshOverdueCount, 5 * 60 * 1000);
+      // Refresh every 15 minutes
+      const interval = setInterval(refreshOverdueCount, 15 * 60 * 1000);
       return () => clearInterval(interval);
     } else {
       setOverdueCount(0);
@@ -48,7 +50,7 @@ export function OverdueProvider({ children }: { children: React.ReactNode }) {
   }, [user]);
 
   return (
-    <OverdueContext.Provider value={{ overdueCount, refreshOverdueCount }}>
+    <OverdueContext.Provider value={{ overdueCount, refreshOverdueCount, setOverdueCount }}>
       {children}
     </OverdueContext.Provider>
   );

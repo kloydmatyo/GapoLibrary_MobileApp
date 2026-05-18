@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import * as SecureStore from 'expo-secure-store';
-import { login as apiLogin, logout as apiLogout } from '@/lib/api';
+import { clearTokenCache, login as apiLogin, logout as apiLogout } from '@/lib/api';
 
 interface User {
   id: string;
@@ -70,6 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try { await apiLogout(); } catch {}
+    clearTokenCache();
     await SecureStore.deleteItemAsync('session_token');
     await SecureStore.deleteItemAsync('user_data');
     setUser(null);

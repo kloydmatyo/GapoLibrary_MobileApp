@@ -38,7 +38,7 @@ function LiveDot() {
 
 export default function BooksScreen() {
   const router = useRouter();
-  const { availability, updateBookAvailability } = useBookAvailability();
+  const { availability } = useBookAvailability();
   const [allBooks, setAllBooks] = useState<Book[]>([]);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -52,14 +52,13 @@ export default function BooksScreen() {
       const res = await getBooks({});
       const fetchedBooks = res.data.books;
       setAllBooks(fetchedBooks);
-      fetchedBooks.forEach((book: Book) => updateBookAvailability(book._id));
     } catch {
       // silently fail
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [updateBookAvailability]);
+  }, []);
 
   useEffect(() => { fetchBooks(); }, []);
 

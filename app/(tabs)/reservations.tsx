@@ -254,17 +254,24 @@ export default function ReservationsScreen() {
 
       // Enrich queue reservations with book details
       const rawReservations: QueueReservation[] = queueRes.data.reservations ?? [];
-      const enriched = await Promise.all(
-        rawReservations.map(async (r) => {
+      const uniqueBookIds = [...new Set(rawReservations.map((r) => r.bookId).filter(Boolean))];
+      const booksById = new Map<string, { title?: string; author?: string }>();
+
+      await Promise.all(
+        uniqueBookIds.map(async (bookId) => {
           try {
-            const bookRes = await getBook(r.bookId);
-            const book = bookRes.data.book;
-            return { ...r, bookTitle: book?.title ?? 'Unknown', bookAuthor: book?.author ?? '' };
+            const bookRes = await getBook(bookId);
+            booksById.set(bookId, bookRes.data.book ?? {});
           } catch {
-            return { ...r, bookTitle: 'Unknown', bookAuthor: '' };
+            booksById.set(bookId, {});
           }
         })
       );
+
+      const enriched = rawReservations.map((r) => {
+        const book = booksById.get(r.bookId);
+        return { ...r, bookTitle: book?.title ?? 'Unknown', bookAuthor: book?.author ?? '' };
+      });
       setQueueItems(enriched);
 
       // Circulation items — pending_pickup, active (picked up), expired

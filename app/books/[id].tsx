@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Image,
-  ActivityIndicator, Alert, TouchableOpacity, Linking,
+  ActivityIndicator, TouchableOpacity,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -315,9 +315,7 @@ export default function BookDetailScreen() {
           <TouchableOpacity
             style={styles.readOnlineBtn}
             onPress={() => {
-              Linking.openURL(book.ebookUrl!).catch(() => {
-                Alert.alert('Error', 'Could not open the eBook link.');
-              });
+              router.push(`/books/reader?id=${id}&title=${encodeURIComponent(book.title)}&url=${encodeURIComponent(book.ebookUrl!)}` as any);
             }}
           >
             <Ionicons name="reader-outline" size={20} color="#fff" />

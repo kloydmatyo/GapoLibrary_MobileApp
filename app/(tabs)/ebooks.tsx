@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, FlatList, TextInput, TouchableOpacity,
-  StyleSheet, ActivityIndicator, Image, Alert, Linking, ScrollView,
+  StyleSheet, ActivityIndicator, Image, ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -64,15 +64,11 @@ export default function EbooksScreen() {
     fetchEbooks(search.trim() || undefined);
   };
 
-  const handleReadOnline = (ebook: Ebook) => {
-    if (!ebook.ebookUrl) {
-      Alert.alert('Not Available', 'This eBook does not have a reading link.');
+  const handleReadOnline = (item: Ebook) => {
+    if (!item.ebookUrl) {
       return;
     }
-    // Open URL directly
-    Linking.openURL(ebook.ebookUrl).catch(() => {
-      Alert.alert('Error', 'Could not open the eBook link.');
-    });
+    router.push(`/books/reader?id=${item._id}&title=${encodeURIComponent(item.title)}&url=${encodeURIComponent(item.ebookUrl)}` as any);
   };
 
   const renderItem = ({ item }: { item: Ebook }) => (

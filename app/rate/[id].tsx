@@ -5,7 +5,16 @@ import { Ionicons } from '@expo/vector-icons';
 import StarRow, { SCORE_LABELS } from '@/components/StarRow';
 import { submitRating } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
-import Colors from '@/constants/colors';
+import Colors, { Radius } from '@/constants/colors';
+import { Fonts } from '@/constants/typography';
+
+const cardShadow = {
+  elevation: 2 as const,
+  shadowColor: Colors.shadow,
+  shadowOpacity: 0.05,
+  shadowRadius: 4,
+  shadowOffset: { width: 0, height: 2 },
+};
 
 export default function RatingScreen() {
   const { id, tx } = useLocalSearchParams<{ id: string; tx: string }>();
@@ -31,8 +40,8 @@ export default function RatingScreen() {
 
   if (authLoading) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator color={Colors.brand} size="large" />
+      <View style={[styles.container, styles.centered]}>
+        <ActivityIndicator color={Colors.accent} size="large" />
       </View>
     );
   }
@@ -88,7 +97,7 @@ export default function RatingScreen() {
         </View>
         <View style={styles.successContainer}>
           <View style={styles.successIcon}>
-            <Ionicons name="checkmark-circle" size={64} color={Colors.brand} />
+            <Ionicons name="checkmark-circle" size={64} color={Colors.accent} />
           </View>
           <Text style={styles.successTitle}>Thank you!</Text>
           <Text style={styles.successText}>Your rating has been submitted anonymously.</Text>
@@ -116,14 +125,19 @@ export default function RatingScreen() {
           <Text style={styles.bookAuthor}>{transaction.bookAuthor}</Text>
           <View style={{ height: 8 }} />
           <Text style={styles.detailText}>{transaction.staffName}</Text>
-          <Text style={styles.detailText}>{transaction.transactionType === 'pickup' ? 'Pickup' : 'Return'} • {formatDate(transaction.transactionDate)}</Text>
+          <Text style={styles.detailText}>
+            {transaction.transactionType === 'pickup' ? 'Pickup' : 'Return'} •{' '}
+            {formatDate(transaction.transactionDate)}
+          </Text>
         </View>
 
         <Text style={styles.sectionLabel}>Your rating</Text>
         <StarRow value={score} onChange={setScore} />
         {score > 0 && <Text style={styles.scoreLabel}>{SCORE_LABELS[score]}</Text>}
 
-        <Text style={styles.sectionLabel}>Comment <Text style={styles.optional}>(optional)</Text></Text>
+        <Text style={styles.sectionLabel}>
+          Comment <Text style={styles.optional}>(optional)</Text>
+        </Text>
         <TextInput
           style={styles.commentInput}
           value={comment}
@@ -137,8 +151,16 @@ export default function RatingScreen() {
         />
         <Text style={styles.charCount}>{comment.length}/500</Text>
 
-        <TouchableOpacity style={[styles.submitBtn, submitting && { opacity: 0.7 }]} onPress={handleSubmit} disabled={submitting}>
-          {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>Submit Rating Anonymously</Text>}
+        <TouchableOpacity
+          style={[styles.submitBtn, submitting && styles.submitBtnDisabled]}
+          onPress={handleSubmit}
+          disabled={submitting}
+        >
+          {submitting ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.submitText}>Submit Rating Anonymously</Text>
+          )}
         </TouchableOpacity>
       </View>
     </View>
@@ -147,32 +169,99 @@ export default function RatingScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
+  centered: { justifyContent: 'center', alignItems: 'center' },
   header: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 16, paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     backgroundColor: Colors.surface,
-    borderBottomWidth: 1, borderBottomColor: Colors.border,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    ...cardShadow,
   },
   backBtn: { padding: 4, marginRight: 12 },
-  headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: Colors.textPrimary },
+  headerTitle: { flex: 1, fontSize: 17, fontFamily: Fonts.heading, color: Colors.textPrimary },
   content: { padding: 20, paddingBottom: 40 },
-  card: { backgroundColor: Colors.surface, borderRadius: 12, padding: 16, marginBottom: 16 },
-  bookTitle: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary },
-  bookAuthor: { fontSize: 14, color: Colors.textSecond, marginTop: 4 },
-  detailText: { fontSize: 13, color: Colors.textSecond },
-  sectionLabel: { fontSize: 15, fontWeight: '700', color: Colors.textPrimary, marginBottom: 8 },
-  starRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
-  scoreLabel: { fontSize: 14, fontWeight: '700', color: '#d97706', marginBottom: 12 },
-  optional: { fontWeight: '400', color: Colors.textMuted },
-  commentInput: { backgroundColor: Colors.surface, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: Colors.border, fontSize: 14, color: Colors.textPrimary, minHeight: 100, marginBottom: 4 },
-  charCount: { fontSize: 12, color: Colors.textMuted, textAlign: 'right', marginBottom: 24 },
-  submitBtn: { backgroundColor: Colors.brand, borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 8 },
-  submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  card: {
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.container,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    ...cardShadow,
+  },
+  bookTitle: { fontSize: 16, fontFamily: Fonts.bodySemiBold, color: Colors.textPrimary },
+  bookAuthor: { fontSize: 14, fontFamily: Fonts.body, color: Colors.textSecond, marginTop: 4 },
+  detailText: { fontSize: 13, fontFamily: Fonts.body, color: Colors.textSecond },
+  sectionLabel: {
+    fontSize: 13,
+    fontFamily: Fonts.heading,
+    color: Colors.textPrimary,
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  scoreLabel: { fontSize: 14, fontFamily: Fonts.bodySemiBold, color: Colors.accent, marginBottom: 12 },
+  optional: { fontFamily: Fonts.body, color: Colors.textMuted },
+  commentInput: {
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.container,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    fontSize: 14,
+    fontFamily: Fonts.body,
+    color: Colors.textPrimary,
+    minHeight: 100,
+    marginBottom: 4,
+  },
+  charCount: {
+    fontSize: 12,
+    fontFamily: Fonts.body,
+    color: Colors.textMuted,
+    textAlign: 'right',
+    marginBottom: 24,
+  },
+  submitBtn: {
+    backgroundColor: Colors.accent,
+    borderRadius: Radius.container,
+    padding: 16,
+    alignItems: 'center',
+    marginTop: 8,
+    elevation: 4,
+    shadowColor: Colors.shadow,
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+  },
+  submitBtnDisabled: { opacity: 0.7 },
+  submitText: { color: '#fff', fontSize: 16, fontFamily: Fonts.bodySemiBold },
   successContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
   successIcon: { marginBottom: 16 },
-  successTitle: { fontSize: 24, fontWeight: '800', color: Colors.textPrimary, marginBottom: 8 },
-  successText: { fontSize: 14, color: Colors.textSecond, textAlign: 'center', lineHeight: 20, marginBottom: 32 },
-  emptyStateContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 40 },
-  emptyStateTitle: { fontSize: 18, fontWeight: '700', color: Colors.textPrimary, marginTop: 12, marginBottom: 6 },
-  emptyStateText: { fontSize: 14, color: Colors.textSecond, textAlign: 'center', lineHeight: 20 },
+  successTitle: { fontSize: 24, fontFamily: Fonts.heading, color: Colors.textPrimary, marginBottom: 8 },
+  successText: {
+    fontSize: 14,
+    fontFamily: Fonts.body,
+    color: Colors.textSecond,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 32,
+  },
+  emptyStateContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 40, paddingHorizontal: 32 },
+  emptyStateTitle: {
+    fontSize: 18,
+    fontFamily: Fonts.heading,
+    color: Colors.textPrimary,
+    marginTop: 12,
+    marginBottom: 6,
+  },
+  emptyStateText: {
+    fontSize: 14,
+    fontFamily: Fonts.body,
+    color: Colors.textSecond,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
 });

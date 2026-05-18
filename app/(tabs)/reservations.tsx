@@ -6,7 +6,16 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { getHistory, getReservations, cancelReservation, getBook } from '@/lib/api';
-import Colors from '@/constants/colors';
+import Colors, { Radius } from '@/constants/colors';
+import { Fonts } from '@/constants/typography';
+
+const cardShadow = {
+  elevation: 2 as const,
+  shadowColor: Colors.shadow,
+  shadowOpacity: 0.05,
+  shadowRadius: 4,
+  shadowOffset: { width: 0, height: 2 },
+};
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -65,8 +74,8 @@ function QueueCard({
       {/* Header */}
       <View style={styles.queueHeader}>
         <View style={styles.statusLeft}>
-          <Ionicons name="time-outline" size={20} color="#f59e0b" />
-          <Text style={[styles.statusLabel, { color: '#f59e0b' }]}>In Queue</Text>
+          <Ionicons name="time-outline" size={20} color={Colors.accent} />
+          <Text style={[styles.statusLabel, { color: Colors.accent }]}>In Queue</Text>
         </View>
         <View style={styles.positionChip}>
           <Text style={styles.positionText}>#{item.queuePosition}</Text>
@@ -76,7 +85,7 @@ function QueueCard({
       {/* Book info */}
       <View style={styles.bookInfo}>
         <View style={styles.bookIcon}>
-          <Ionicons name="book" size={24} color={Colors.brand} />
+          <Ionicons name="book" size={24} color={Colors.accent} />
         </View>
         <View style={styles.bookDetails}>
           <Text style={styles.bookTitle} numberOfLines={2}>
@@ -125,10 +134,10 @@ function CirculationCard({ item }: { item: CirculationItem }) {
   const isExpired = item.status === 'expired';
 
   const config = isPending
-    ? { color: '#f59e0b', bg: '#fef3c7', label: 'Ready for Pickup', icon: 'time-outline' as const, desc: 'Your book is ready! Please pick it up before the deadline.' }
+    ? { color: Colors.accent, bg: Colors.accentMuted, label: 'Ready for Pickup', icon: 'time-outline' as const, desc: 'Your book is ready! Please pick it up before the deadline.' }
     : item.status === 'active'
-      ? { color: Colors.brand, bg: Colors.brandLight, label: 'Picked Up', icon: 'checkmark-circle-outline' as const, desc: 'You have successfully picked up this book.' }
-      : { color: '#6b7280', bg: '#f3f4f6', label: 'Expired', icon: 'close-circle-outline' as const, desc: 'Pickup deadline has passed. Reservation cancelled.' };
+      ? { color: Colors.accent, bg: Colors.accentMuted, label: 'Picked Up', icon: 'checkmark-circle-outline' as const, desc: 'You have successfully picked up this book.' }
+      : { color: Colors.statusReturned, bg: Colors.statusReturnedBg, label: 'Expired', icon: 'close-circle-outline' as const, desc: 'Pickup deadline has passed. Reservation cancelled.' };
 
   return (
     <View style={[styles.card, isPending && styles.pendingCard, isExpired && styles.expiredCard]}>
@@ -151,7 +160,7 @@ function CirculationCard({ item }: { item: CirculationItem }) {
       {/* Book info */}
       <View style={styles.bookInfo}>
         <View style={styles.bookIcon}>
-          <Ionicons name="book" size={24} color={Colors.brand} />
+          <Ionicons name="book" size={24} color={Colors.accent} />
         </View>
         <View style={styles.bookDetails}>
           <Text style={styles.bookTitle} numberOfLines={2}>{item.bookTitle}</Text>
@@ -306,7 +315,7 @@ export default function ReservationsScreen() {
   if (loading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={Colors.brand} />
+        <ActivityIndicator size="large" color={Colors.accent} />
       </View>
     );
   }
@@ -335,7 +344,7 @@ export default function ReservationsScreen() {
           keyExtractor={() => ''}
           renderItem={null}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.brand]} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.accent]} />
           }
           contentContainerStyle={styles.listContent}
           ListHeaderComponent={
@@ -345,12 +354,12 @@ export default function ReservationsScreen() {
                 <>
                   <SectionLabel
                     icon="time-outline"
-                    iconColor="#f59e0b"
+                    iconColor={Colors.accent}
                     label="Waiting in Queue"
-                    labelColor="#92400e"
+                    labelColor={Colors.accentDark}
                     count={queueItems.length}
-                    countBg="#fef3c7"
-                    countColor="#92400e"
+                    countBg={Colors.accentMuted}
+                    countColor={Colors.accentDark}
                   />
                   {queueItems.map((item) => (
                     <QueueCard
@@ -368,12 +377,12 @@ export default function ReservationsScreen() {
                 <>
                   <SectionLabel
                     icon="book-outline"
-                    iconColor={Colors.brand}
+                    iconColor={Colors.accent}
                     label="Borrow Requests"
-                    labelColor={Colors.brandDark}
+                    labelColor={Colors.accentDark}
                     count={circulationItems.length}
-                    countBg={Colors.brandMuted}
-                    countColor={Colors.brandDark}
+                    countBg={Colors.accentMuted}
+                    countColor={Colors.accentDark}
                   />
                   {circulationItems.map((item) => (
                     <CirculationCard key={item._id} item={item} />
@@ -393,104 +402,99 @@ const styles = StyleSheet.create({
   centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background },
   listContent: { padding: 16, paddingBottom: 32 },
 
-  // Section headers
   sectionHeader: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     marginBottom: 10, marginTop: 4,
   },
-  sectionHeaderText: { fontSize: 13, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.6 },
-  sectionCount: {
-    paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10,
+  sectionHeaderText: {
+    fontSize: 13, fontFamily: Fonts.heading, textTransform: 'uppercase', letterSpacing: 0.6,
   },
-  sectionCountText: { fontSize: 12, fontWeight: '700' },
+  sectionCount: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: Radius.inner },
+  sectionCountText: { fontSize: 12, fontFamily: Fonts.bodyBold },
 
-  // Shared card base
   card: {
-    backgroundColor: Colors.surface, borderRadius: 20, marginBottom: 16,
-    overflow: 'hidden', elevation: 5,
-    shadowColor: Colors.shadow, shadowOpacity: 0.10, shadowRadius: 10, shadowOffset: { width: 0, height: 5 },
+    backgroundColor: Colors.surface, borderRadius: Radius.container, marginBottom: 16,
+    overflow: 'hidden', borderWidth: 1, borderColor: Colors.border, ...cardShadow,
   },
 
-  // Queue card specifics
-  queueCard: { borderWidth: 2, borderColor: '#fde68a' },
+  queueCard: { borderWidth: 1, borderColor: Colors.accent },
   queueHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    padding: 12, backgroundColor: '#fef3c7',
+    padding: 12, backgroundColor: Colors.accentMuted,
   },
   positionChip: {
-    backgroundColor: '#f59e0b', borderRadius: 12,
+    backgroundColor: Colors.accent, borderRadius: Radius.inner,
     paddingHorizontal: 10, paddingVertical: 4,
   },
-  positionText: { fontSize: 13, fontWeight: '800', color: '#fff' },
+  positionText: { fontSize: 13, fontFamily: Fonts.bodyBold, color: '#fff' },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingBottom: 8 },
-  metaText: { fontSize: 12, color: Colors.textMuted },
+  metaText: { fontSize: 12, fontFamily: Fonts.body, color: Colors.textMuted },
   queueNote: {
     marginHorizontal: 16, marginBottom: 12,
-    backgroundColor: Colors.brandMuted, borderRadius: 8, padding: 10,
+    backgroundColor: Colors.surfaceMuted, borderRadius: Radius.container, padding: 10,
   },
-  queueNoteText: { fontSize: 12, color: Colors.brandDark, lineHeight: 17 },
+  queueNoteText: { fontSize: 12, fontFamily: Fonts.body, color: Colors.textSecond, lineHeight: 17 },
   cancelBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
     marginHorizontal: 16, marginBottom: 14, paddingVertical: 10,
-    borderRadius: 10, borderWidth: 1, borderColor: '#fecaca',
+    borderRadius: Radius.container, borderWidth: 1, borderColor: Colors.error,
     backgroundColor: Colors.errorBg,
   },
-  cancelBtnText: { fontSize: 13, fontWeight: '700', color: Colors.error },
+  cancelBtnText: { fontSize: 13, fontFamily: Fonts.bodySemiBold, color: Colors.error },
   btnDisabled: { opacity: 0.5 },
 
-  // Circulation card specifics
-  pendingCard: { borderWidth: 2, borderColor: '#f59e0b' },
+  pendingCard: { borderWidth: 1, borderColor: Colors.accent },
   expiredCard: { opacity: 0.7 },
   statusHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12,
   },
   statusLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  statusLabel: { fontSize: 14, fontWeight: '700' },
+  statusLabel: { fontSize: 14, fontFamily: Fonts.bodySemiBold },
   timeChip: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: 'rgba(255,255,255,0.8)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12,
+    backgroundColor: Colors.surface, paddingHorizontal: 8, paddingVertical: 4, borderRadius: Radius.inner,
   },
-  timeText: { fontSize: 12, fontWeight: '600' },
+  timeText: { fontSize: 12, fontFamily: Fonts.bodyMedium },
 
-  // Shared book info
   bookInfo: { flexDirection: 'row', padding: 16, gap: 12 },
   bookIcon: {
     width: 48, height: 48, borderRadius: 24,
-    backgroundColor: Colors.brandMuted, justifyContent: 'center', alignItems: 'center',
+    backgroundColor: Colors.accentMuted, justifyContent: 'center', alignItems: 'center',
   },
   bookDetails: { flex: 1 },
-  bookTitle: { fontSize: 16, fontWeight: '800', color: Colors.textPrimary, marginBottom: 4 },
-  bookAuthor: { fontSize: 14, color: Colors.textSecond, fontWeight: '600' },
+  bookTitle: { fontSize: 16, fontFamily: Fonts.bodySemiBold, color: Colors.textPrimary, marginBottom: 4 },
+  bookAuthor: { fontSize: 14, fontFamily: Fonts.body, color: Colors.textSecond },
 
-  // Timeline
   timeline: { paddingHorizontal: 16, paddingBottom: 16 },
   timelineItem: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 12 },
   timelineDot: {
     width: 12, height: 12, borderRadius: 6,
     backgroundColor: Colors.border, marginTop: 4, marginRight: 12,
   },
-  timelineDotActive: { backgroundColor: '#f59e0b', width: 14, height: 14, borderRadius: 7 },
-  timelineDotComplete: { backgroundColor: Colors.brand },
+  timelineDotActive: { backgroundColor: Colors.accent, width: 14, height: 14, borderRadius: 7 },
+  timelineDotComplete: { backgroundColor: Colors.accent },
   timelineContent: { flex: 1 },
-  timelineLabel: { fontSize: 13, fontWeight: '600', color: Colors.textPrimary, marginBottom: 2 },
-  timelineDate: { fontSize: 12, color: Colors.textMuted },
-  timelineDateActive: { color: '#f59e0b', fontWeight: '600' },
+  timelineLabel: { fontSize: 13, fontFamily: Fonts.bodyMedium, color: Colors.textPrimary, marginBottom: 2 },
+  timelineDate: { fontSize: 12, fontFamily: Fonts.body, color: Colors.textMuted },
+  timelineDateActive: { color: Colors.accent, fontFamily: Fonts.bodySemiBold },
 
-  // Description footer
-  descFooter: { padding: 12, marginHorizontal: 16, marginBottom: 16, borderRadius: 8 },
-  descFooterText: { fontSize: 13, lineHeight: 18, textAlign: 'center' },
+  descFooter: { padding: 12, marginHorizontal: 16, marginBottom: 16, borderRadius: Radius.container },
+  descFooterText: { fontSize: 13, fontFamily: Fonts.body, lineHeight: 18, textAlign: 'center' },
 
-  // Empty state
   emptyContainer: {
     flex: 1, justifyContent: 'center', alignItems: 'center',
     paddingVertical: 80, paddingHorizontal: 32,
   },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: Colors.textPrimary, marginTop: 16, marginBottom: 8 },
-  emptyText: { fontSize: 14, color: Colors.textMuted, textAlign: 'center', lineHeight: 20, marginBottom: 24 },
-  browseBtn: {
-    backgroundColor: Colors.brandDarker, borderRadius: 14,
-    paddingVertical: 14, paddingHorizontal: 28,
-    elevation: 4, shadowColor: '#2e7d32', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 },
+  emptyTitle: {
+    fontSize: 18, fontFamily: Fonts.heading, color: Colors.textPrimary, marginTop: 16, marginBottom: 8,
   },
-  browseBtnText: { color: '#fff', fontSize: 14, fontWeight: '800' },
+  emptyText: {
+    fontSize: 14, fontFamily: Fonts.body, color: Colors.textMuted, textAlign: 'center', lineHeight: 20, marginBottom: 24,
+  },
+  browseBtn: {
+    backgroundColor: Colors.accentDark, borderRadius: Radius.container,
+    paddingVertical: 14, paddingHorizontal: 28,
+    elevation: 4, shadowColor: Colors.shadow, shadowOpacity: 0.1, shadowRadius: 6, shadowOffset: { width: 0, height: 3 },
+  },
+  browseBtnText: { color: '#fff', fontSize: 14, fontFamily: Fonts.bodySemiBold },
 });

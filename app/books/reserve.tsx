@@ -7,7 +7,16 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getBook, getReservations, createReservation, cancelReservation } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
-import Colors from '@/constants/colors';
+import Colors, { Radius } from '@/constants/colors';
+import { Fonts } from '@/constants/typography';
+
+const cardShadow = {
+  elevation: 2 as const,
+  shadowColor: Colors.shadow,
+  shadowOpacity: 0.05,
+  shadowRadius: 4,
+  shadowOffset: { width: 0, height: 2 },
+};
 
 interface Book {
   _id: string;
@@ -156,7 +165,7 @@ export default function ReserveScreen() {
   if (loading || !book) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={Colors.brand} />
+        <ActivityIndicator size="large" color={Colors.accent} />
       </View>
     );
   }
@@ -182,7 +191,7 @@ export default function ReserveScreen() {
         {/* Book card */}
         <View style={styles.bookCard}>
           <View style={styles.bookIconWrap}>
-            <Ionicons name="book" size={28} color={Colors.brand} />
+            <Ionicons name="book" size={28} color={Colors.accent} />
           </View>
           <View style={styles.bookInfo}>
             <Text style={styles.bookTitle} numberOfLines={2}>{book.title}</Text>
@@ -335,126 +344,120 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background },
 
-  // Header
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 16, paddingVertical: 12,
     backgroundColor: Colors.surface,
     borderBottomWidth: 1, borderBottomColor: Colors.border,
-    elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4,
+    ...cardShadow,
   },
   backBtn: { padding: 4 },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: Colors.textPrimary },
+  headerTitle: { fontSize: 20, fontFamily: Fonts.heading, color: Colors.textPrimary },
 
   content: { padding: 16, paddingBottom: 32 },
 
-  // Book card
   bookCard: {
     flexDirection: 'row', alignItems: 'center', gap: 14,
-    backgroundColor: Colors.surface, borderRadius: 16, padding: 16,
-    marginBottom: 16, elevation: 2,
-    shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6,
+    backgroundColor: Colors.surface, borderRadius: Radius.container, padding: 16,
+    marginBottom: 16, borderWidth: 1, borderColor: Colors.border, ...cardShadow,
   },
   bookIconWrap: {
     width: 56, height: 56, borderRadius: 28,
-    backgroundColor: Colors.brandMuted,
+    backgroundColor: Colors.accentMuted,
     justifyContent: 'center', alignItems: 'center',
   },
   bookInfo: { flex: 1 },
-  bookTitle: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary, marginBottom: 2 },
-  bookAuthor: { fontSize: 13, color: Colors.textSecond, marginBottom: 8 },
+  bookTitle: { fontSize: 16, fontFamily: Fonts.bodySemiBold, color: Colors.textPrimary, marginBottom: 2 },
+  bookAuthor: { fontSize: 13, fontFamily: Fonts.body, color: Colors.textSecond, marginBottom: 8 },
   unavailBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4,
-    borderRadius: 20, backgroundColor: Colors.errorBg,
+    borderRadius: Radius.inner, backgroundColor: Colors.errorBg,
   },
   unavailDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: Colors.error },
-  unavailText: { fontSize: 12, fontWeight: '700', color: Colors.error },
+  unavailText: { fontSize: 12, fontFamily: Fonts.bodyBold, color: Colors.error },
 
-  // Section
   section: {
-    backgroundColor: Colors.surface, borderRadius: 16, padding: 16,
-    marginBottom: 16, elevation: 2,
-    shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6,
+    backgroundColor: Colors.surface, borderRadius: Radius.container, padding: 16,
+    marginBottom: 16, borderWidth: 1, borderColor: Colors.border, ...cardShadow,
   },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary, marginBottom: 14 },
+  sectionTitle: { fontSize: 16, fontFamily: Fonts.heading, color: Colors.textPrimary, marginBottom: 14 },
 
-  // Queue
   queueRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 16 },
   positionWrap: { alignItems: 'center' },
   positionBubble: {
-    width: 72, height: 72, borderRadius: 20,
-    backgroundColor: '#fef3c7',
+    width: 72, height: 72, borderRadius: Radius.container,
+    backgroundColor: Colors.accentMuted,
     justifyContent: 'center', alignItems: 'center', marginBottom: 10,
   },
-  positionText: { fontSize: 26, fontWeight: '800', color: '#f59e0b' },
+  positionText: { fontSize: 26, fontFamily: Fonts.heading, color: Colors.accent },
   bubblesRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, maxWidth: 120 },
   queueDot: {
     width: 26, height: 26, borderRadius: 13,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: Colors.surfaceMuted,
     justifyContent: 'center', alignItems: 'center',
   },
-  queueDotActive: { backgroundColor: '#f59e0b' },
-  queueDotText: { fontSize: 10, fontWeight: '700', color: Colors.textSecond },
-  queueDotTextActive: { color: '#fff' },
+  queueDotActive: { backgroundColor: Colors.accent },
+  queueDotText: { fontSize: 10, fontFamily: Fonts.bodyBold, color: Colors.textSecond },
+  queueDotTextActive: { color: '#fff', fontFamily: Fonts.bodyBold },
   queueDotNext: {
     width: 26, height: 26, borderRadius: 13,
-    borderWidth: 2, borderStyle: 'dashed', borderColor: '#f59e0b',
-    backgroundColor: '#fef3c7',
+    borderWidth: 2, borderStyle: 'dashed', borderColor: Colors.accent,
+    backgroundColor: Colors.accentMuted,
     justifyContent: 'center', alignItems: 'center',
   },
-  queueDotNextText: { fontSize: 10, fontWeight: '700', color: '#f59e0b' },
-  moreText: { fontSize: 11, color: Colors.textMuted, alignSelf: 'center' },
+  queueDotNextText: { fontSize: 10, fontFamily: Fonts.bodyBold, color: Colors.accent },
+  moreText: { fontSize: 11, fontFamily: Fonts.body, color: Colors.textMuted, alignSelf: 'center' },
   queueDesc: { flex: 1, paddingTop: 4 },
-  queueDescTitle: { fontSize: 15, fontWeight: '700', color: Colors.textPrimary, marginBottom: 4 },
-  queueDescSub: { fontSize: 13, color: Colors.textSecond, lineHeight: 18 },
+  queueDescTitle: { fontSize: 15, fontFamily: Fonts.bodySemiBold, color: Colors.textPrimary, marginBottom: 4 },
+  queueDescSub: { fontSize: 13, fontFamily: Fonts.body, color: Colors.textSecond, lineHeight: 18 },
 
-  // Already reserved banner
   reservedBanner: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: '#fef3c7', borderRadius: 12, padding: 14,
-    marginBottom: 16, borderWidth: 1, borderColor: '#fde68a',
+    backgroundColor: Colors.accentMuted, borderRadius: Radius.container, padding: 14,
+    marginBottom: 16, borderWidth: 1, borderColor: Colors.border,
   },
-  reservedBannerText: { flex: 1, fontSize: 14, fontWeight: '600', color: '#92400e' },
+  reservedBannerText: { flex: 1, fontSize: 14, fontFamily: Fonts.bodyMedium, color: Colors.accentDark },
 
-  // Patron fields
   fieldGroup: { marginBottom: 12 },
-  fieldLabel: { fontSize: 13, fontWeight: '600', color: Colors.textSecond, marginBottom: 6 },
+  fieldLabel: { fontSize: 13, fontFamily: Fonts.bodyMedium, color: Colors.textSecond, marginBottom: 6 },
   fieldReadOnly: {
-    backgroundColor: '#f3f4f6', borderRadius: 10, padding: 12,
+    backgroundColor: Colors.surfaceMuted, borderRadius: Radius.container, padding: 12,
     borderWidth: 1, borderColor: Colors.border,
   },
-  fieldValue: { fontSize: 14, color: Colors.textPrimary, fontWeight: '500' },
+  fieldValue: { fontSize: 14, fontFamily: Fonts.body, color: Colors.textPrimary },
 
-  // Policy
   policyCard: {
-    backgroundColor: '#fef3c7', borderRadius: 16, padding: 16, marginBottom: 16,
+    backgroundColor: Colors.surfaceMuted, borderRadius: Radius.container, padding: 16, marginBottom: 16,
+    borderWidth: 1, borderColor: Colors.border,
   },
   policyHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
-  policyTitle: { fontSize: 13, fontWeight: '700', color: '#92400e', textTransform: 'uppercase', letterSpacing: 0.5 },
-  policyItem: { fontSize: 13, color: '#92400e', lineHeight: 22 },
+  policyTitle: {
+    fontSize: 13, fontFamily: Fonts.bodyBold, color: Colors.textSecond,
+    textTransform: 'uppercase', letterSpacing: 0.5,
+  },
+  policyItem: { fontSize: 13, fontFamily: Fonts.body, color: Colors.textSecond, lineHeight: 22 },
 
-  // Actions
   actions: { flexDirection: 'row', gap: 12, marginTop: 8 },
   cancelBtn: {
-    flex: 1, paddingVertical: 14, borderRadius: 12,
+    flex: 1, paddingVertical: 14, borderRadius: Radius.container,
     borderWidth: 1, borderColor: Colors.border,
     alignItems: 'center', backgroundColor: Colors.surface,
   },
-  cancelBtnText: { fontSize: 15, fontWeight: '700', color: Colors.textPrimary },
+  cancelBtnText: { fontSize: 15, fontFamily: Fonts.bodySemiBold, color: Colors.textPrimary },
   joinBtn: {
-    flex: 1, paddingVertical: 14, borderRadius: 12,
-    alignItems: 'center', backgroundColor: '#f59e0b',
+    flex: 1, paddingVertical: 14, borderRadius: Radius.container,
+    alignItems: 'center', backgroundColor: Colors.accent,
+    elevation: 4, shadowColor: Colors.shadow, shadowOpacity: 0.1, shadowRadius: 6, shadowOffset: { width: 0, height: 3 },
   },
-  joinBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
+  joinBtnText: { fontSize: 15, fontFamily: Fonts.bodySemiBold, color: '#fff' },
   destructiveBtn: {
-    flex: 1, paddingVertical: 14, borderRadius: 12,
+    flex: 1, paddingVertical: 14, borderRadius: Radius.container,
     alignItems: 'center', backgroundColor: Colors.error,
   },
-  destructiveBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
+  destructiveBtnText: { fontSize: 15, fontFamily: Fonts.bodySemiBold, color: '#fff' },
   btnDisabled: { opacity: 0.5 },
 
-  // Feedback screens (success / cancelled)
   feedbackContainer: {
     flex: 1, justifyContent: 'center', alignItems: 'center',
     padding: 32, backgroundColor: Colors.background,
@@ -463,12 +466,17 @@ const styles = StyleSheet.create({
     width: 80, height: 80, borderRadius: 40,
     justifyContent: 'center', alignItems: 'center', marginBottom: 20,
   },
-  feedbackTitle: { fontSize: 22, fontWeight: '800', color: Colors.textPrimary, textAlign: 'center', marginBottom: 12 },
-  feedbackBody: { fontSize: 14, color: Colors.textSecond, textAlign: 'center', lineHeight: 22, marginBottom: 32 },
-  feedbackHighlight: { fontWeight: '700', color: '#f59e0b' },
-  doneBtn: {
-    backgroundColor: Colors.brand, borderRadius: 12,
-    paddingVertical: 14, paddingHorizontal: 40,
+  feedbackTitle: {
+    fontSize: 22, fontFamily: Fonts.heading, color: Colors.textPrimary, textAlign: 'center', marginBottom: 12,
   },
-  doneBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  feedbackBody: {
+    fontSize: 14, fontFamily: Fonts.body, color: Colors.textSecond, textAlign: 'center', lineHeight: 22, marginBottom: 32,
+  },
+  feedbackHighlight: { fontFamily: Fonts.bodySemiBold, color: Colors.accent },
+  doneBtn: {
+    backgroundColor: Colors.accent, borderRadius: Radius.container,
+    paddingVertical: 14, paddingHorizontal: 40,
+    elevation: 4, shadowColor: Colors.shadow, shadowOpacity: 0.1, shadowRadius: 6, shadowOffset: { width: 0, height: 3 },
+  },
+  doneBtnText: { color: '#fff', fontSize: 15, fontFamily: Fonts.bodySemiBold },
 });

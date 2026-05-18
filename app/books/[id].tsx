@@ -6,9 +6,18 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { getBook, getHistory, toggleBookmark, getBookmarks, getReservations } from '@/lib/api';
+import { getBook, getHistory, toggleBookmark, getBookmarks, getReservations, getBookReviews } from '@/lib/api';
 import { useBookAvailability } from '@/context/BookAvailabilityContext';
-import Colors from '@/constants/colors';
+import Colors, { Radius } from '@/constants/colors';
+import { Fonts } from '@/constants/typography';
+
+const cardShadow = {
+  elevation: 2 as const,
+  shadowColor: Colors.shadow,
+  shadowOpacity: 0.05,
+  shadowRadius: 4,
+  shadowOffset: { width: 0, height: 2 },
+};
 
 interface Book {
   _id: string;
@@ -27,8 +36,18 @@ interface Book {
   coverImageUrl?: string;
 }
 
+interface BookReview {
+  _id: string;
+  userId?: string;
+  firstName?: string;
+  lastName?: string;
+  score: number;
+  comment?: string;
+  createdAt: string;
+}
+
 export default function BookDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, reviewUpdated } = useLocalSearchParams<{ id: string; reviewUpdated?: string }>();
   const router = useRouter();
   const { availability, updateBookAvailability } = useBookAvailability();
   const [book, setBook] = useState<Book | null>(null);
@@ -37,23 +56,47 @@ export default function BookDetailScreen() {
   const [alreadyQueued, setAlreadyQueued] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
+  const [canReview, setCanReview] = useState(false);
+  const [reviews, setReviews] = useState<BookReview[]>([]);
+  const [avgRating, setAvgRating] = useState(0);
+  const [totalReviews, setTotalReviews] = useState(0);
+  const [ratingDist, setRatingDist] = useState<number[]>([0, 0, 0, 0, 0]);
 
   useEffect(() => {
     const loadBook = async () => {
       try {
-        const [bookRes, historyRes, bookmarkIds, reservationsRes] = await Promise.all([
+        const [bookRes, historyRes, bookmarkIds, reservationsRes, reviewsRes] = await Promise.all([
           getBook(id),
           getHistory(),
           getBookmarks(),
           getReservations(),
+          getBookReviews(id),
         ]);
         setBook(bookRes.data.book);
         await updateBookAvailability(id);
 
-        const active = (historyRes.data.history ?? []).filter(
-          (h: any) => h.status === 'pending_pickup' || h.status === 'active'
+        const reviewPayload = reviewsRes?.data ?? {};
+        setReviews(reviewPayload.reviews ?? []);
+        setAvgRating(Number(reviewPayload.avg ?? 0));
+        setTotalReviews(Number(reviewPayload.total ?? 0));
+        setRatingDist(Array.isArray(reviewPayload.dist) ? reviewPayload.dist : [0, 0, 0, 0, 0]);
+
+        const history = historyRes.data.history ?? [];
+
+        const activelyBorrowed = history.some(
+          (h: any) =>
+            h.bookId === id &&
+            ['active', 'pending_pickup'].includes(h.status)
         );
-        setAlreadyBorrowed(active.some((h: any) => h.bookId === id));
+
+        const hasEverBorrowed = history.some(
+          (h: any) =>
+            h.bookId === id &&
+            ['active', 'pending_pickup', 'returned', 'overdue'].includes(h.status)
+        );
+
+        setAlreadyBorrowed(activelyBorrowed);
+        setCanReview(hasEverBorrowed);
         setBookmarked(bookmarkIds.includes(id));
 
         // Check if already in queue for this book
@@ -75,7 +118,7 @@ export default function BookDetailScreen() {
     }, 15000);
 
     return () => clearInterval(interval);
-  }, [id, updateBookAvailability]);
+  }, [id, reviewUpdated, updateBookAvailability]);
 
 
   const handleBookmark = async () => {
@@ -91,7 +134,7 @@ export default function BookDetailScreen() {
   };
 
   if (loading) return (    <View style={styles.loadingContainer}>
-      <ActivityIndicator size="large" color={Colors.brand} />
+      <ActivityIndicator size="large" color={Colors.accent} />
     </View>
   );
 
@@ -102,6 +145,21 @@ export default function BookDetailScreen() {
   const totalCopies = realtimeAvailability?.totalCopies ?? book.totalCopies;
   const available = availableCopies > 0;
   const hasRealtimeData = !!realtimeAvailability;
+  const canWriteReview = canReview || book.isEbook;
+
+  const formatReviewerName = (review: BookReview) => {
+    const firstName = (review.firstName ?? '').trim();
+    const lastName = (review.lastName ?? '').trim();
+    if (!firstName && !lastName) return 'Anonymous Patron';
+    const lastInitial = lastName ? `${lastName.charAt(0).toUpperCase()}.` : '';
+    return `${firstName}${lastInitial ? ` ${lastInitial}` : ''}`;
+  };
+
+  const formatPostedDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    if (Number.isNaN(date.getTime())) return 'Unknown date';
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  };
 
   return (
     <View style={styles.container}>
@@ -119,7 +177,7 @@ export default function BookDetailScreen() {
           <Ionicons
             name={bookmarked ? 'bookmark' : 'bookmark-outline'}
             size={24}
-            color={bookmarked ? Colors.brand : Colors.textPrimary}
+            color={bookmarked ? Colors.accent : Colors.textPrimary}
           />
         </TouchableOpacity>
       </View>
@@ -129,7 +187,7 @@ export default function BookDetailScreen() {
           {book.coverImageUrl
             ? <Image source={{ uri: book.coverImageUrl }} style={styles.cover} resizeMode="cover" />
             : (
-              <LinearGradient colors={['#2e7d32', '#15803d']} style={styles.coverPlaceholder}>
+              <LinearGradient colors={[Colors.accent, Colors.accentDark]} style={styles.coverPlaceholder}>
                 <Ionicons name="book" size={64} color="rgba(255,255,255,0.7)" />
               </LinearGradient>
             )}
@@ -164,8 +222,8 @@ export default function BookDetailScreen() {
             <View key={label as string} style={styles.row}>
               <Text style={styles.label}>{label}</Text>
               <Text style={[styles.value, label === 'Available Copies' && {
-                color: available ? Colors.success : Colors.error, fontWeight: '700',
-              }]}>
+                color: available ? Colors.accent : Colors.textMuted,
+              }, label === 'Available Copies' && styles.valueAvail]}>
                 {value}
               </Text>
             </View>
@@ -178,6 +236,80 @@ export default function BookDetailScreen() {
             <Text style={styles.desc}>{book.description}</Text>
           </View>
         )}
+
+        <View style={styles.reviewsCard}>
+          <Text style={styles.reviewsTitle}>Reviews & Ratings</Text>
+
+          {totalReviews > 0 ? (
+            <>
+              <View style={styles.ratingSummaryRow}>
+                <View style={styles.avgWrap}>
+                  <Ionicons name="star" size={24} color="#f59e0b" />
+                  <Text style={styles.avgText}>{avgRating.toFixed(1)}</Text>
+                </View>
+                <Text style={styles.totalReviewsText}>
+                  {totalReviews} {totalReviews === 1 ? 'review' : 'reviews'}
+                </Text>
+              </View>
+
+              <View style={styles.distWrap}>
+                {[5, 4, 3, 2, 1].map((star, index) => {
+                  const count = ratingDist[index] ?? 0;
+                  const progress = totalReviews > 0 ? count / totalReviews : 0;
+                  return (
+                    <View key={star} style={styles.distRow}>
+                      <Text style={styles.distLabel}>{star}★</Text>
+                      <View style={styles.distBarTrack}>
+                        <View style={[styles.distBarFill, { width: `${progress * 100}%` }]} />
+                      </View>
+                      <Text style={styles.distCount}>{count}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+
+              <View style={styles.reviewList}>
+                {reviews.map((review) => (
+                  <View key={review._id} style={styles.reviewItemCard}>
+                    <View style={styles.reviewHeader}>
+                      <Text style={styles.reviewerName}>{formatReviewerName(review)}</Text>
+                      <View style={styles.reviewStars}>
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Ionicons
+                            key={`${review._id}-${star}`}
+                            name={star <= review.score ? 'star' : 'star-outline'}
+                            size={16}
+                            color={star <= review.score ? '#f59e0b' : Colors.border}
+                          />
+                        ))}
+                      </View>
+                    </View>
+
+                    {review.comment ? (
+                      <Text style={styles.reviewComment}>{review.comment}</Text>
+                    ) : null}
+
+                    <Text style={styles.reviewDate}>{formatPostedDate(review.createdAt)}</Text>
+                  </View>
+                ))}
+              </View>
+            </>
+          ) : (
+            <Text style={styles.emptyReviewsText}>
+              No reviews yet. Be the first to review this book.
+            </Text>
+          )}
+
+          {canWriteReview && (
+            <TouchableOpacity
+              style={styles.writeReviewBtn}
+              onPress={() => router.push(`/books/review?id=${id}` as any)}
+            >
+              <Ionicons name="create-outline" size={18} color="#fff" />
+              <Text style={styles.writeReviewText}>Write a Review</Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
         {book.isEbook && book.ebookUrl ? (
           <TouchableOpacity
@@ -199,7 +331,7 @@ export default function BookDetailScreen() {
         ) : available ? (
           <>
             <View style={styles.borrowHint}>
-              <Ionicons name="information-circle-outline" size={16} color={Colors.brand} />
+              <Ionicons name="information-circle-outline" size={16} color={Colors.accent} />
               <Text style={styles.borrowHintText}>
                 You must visit the library to collect your book within 24 hours of requesting.
               </Text>
@@ -220,7 +352,7 @@ export default function BookDetailScreen() {
         ) : (
           <>
             <View style={styles.queueHint}>
-              <Ionicons name="time-outline" size={16} color="#f59e0b" />
+              <Ionicons name="time-outline" size={16} color={Colors.accent} />
               <Text style={styles.queueHintText}>
                 All copies are checked out. Join the queue and we'll notify you when one is available.
               </Text>
@@ -250,79 +382,142 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
+    ...cardShadow,
   },
   backButton: { padding: 4, marginRight: 12 },
   headerTitle: {
     flex: 1,
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: Fonts.heading,
     color: Colors.textPrimary,
   },
   bookmarkButton: { padding: 4 },
   scroll: { flex: 1 },
   content: { padding: 20 },
   coverWrap: {
-    width: 130, height: 175, borderRadius: 16, backgroundColor: Colors.brandLight,
+    width: 130, height: 175, borderRadius: Radius.container, backgroundColor: Colors.accentMuted,
     justifyContent: 'center', alignItems: 'center', alignSelf: 'center',
-    marginBottom: 16, overflow: 'hidden',
-    elevation: 8, shadowColor: '#2e7d32', shadowOpacity: 0.3, shadowRadius: 16, shadowOffset: { width: 0, height: 8 },
+    marginBottom: 16, overflow: 'hidden', borderWidth: 1, borderColor: Colors.border, ...cardShadow,
   },
   cover: { width: '100%', height: '100%' },
   coverPlaceholder: { width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 22, fontWeight: '900', color: Colors.textPrimary, textAlign: 'center', marginBottom: 4 },
-  author: { fontSize: 14, color: Colors.textSecond, textAlign: 'center', marginBottom: 12, fontWeight: '600' },
+  title: {
+    fontSize: 22, fontFamily: Fonts.heading, color: Colors.textPrimary,
+    textAlign: 'center', marginBottom: 4,
+  },
+  author: {
+    fontSize: 14, fontFamily: Fonts.body, color: Colors.textSecond,
+    textAlign: 'center', marginBottom: 12,
+  },
   badges: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginBottom: 16 },
-  badge: { backgroundColor: Colors.brandMuted, paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20 },
-  badgeText: { fontSize: 12, color: Colors.brandDarker, fontWeight: '800' },
+  badge: {
+    backgroundColor: Colors.accentMuted, paddingHorizontal: 12, paddingVertical: 5,
+    borderRadius: Radius.inner,
+  },
+  badgeText: { fontSize: 12, fontFamily: Fonts.bodyBold, color: Colors.accentDark },
   card: {
-    backgroundColor: Colors.surface, borderRadius: 20, padding: 16, marginBottom: 12,
-    elevation: 4, shadowColor: Colors.shadow, shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 4 },
+    backgroundColor: Colors.surface, borderRadius: Radius.container, padding: 16, marginBottom: 12,
+    borderWidth: 1, borderColor: Colors.border, ...cardShadow,
   },
   liveStatus: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingBottom: 12, marginBottom: 8, borderBottomWidth: 1, borderBottomColor: Colors.border,
   },
-  liveDotLarge: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.brand },
-  liveText: { fontSize: 12, fontWeight: '700', color: Colors.brand },
-  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: Colors.border },
-  label: { fontSize: 13, color: Colors.textSecond, fontWeight: '600' },
-  value: { fontSize: 13, color: Colors.textPrimary, fontWeight: '700' },
-  descCard: { backgroundColor: Colors.surface, borderRadius: 20, padding: 16, marginBottom: 16,
-    elevation: 4, shadowColor: Colors.shadow, shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },
-  descTitle: { fontSize: 14, fontWeight: '800', color: Colors.textPrimary, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
-  desc: { fontSize: 13, color: '#4b5563', lineHeight: 20 },
-  readOnlineBtn: {
-    backgroundColor: Colors.brandDarker, borderRadius: 14, padding: 16, alignItems: 'center',
-    marginBottom: 20, flexDirection: 'row', justifyContent: 'center', gap: 8,
-    elevation: 5, shadowColor: '#2e7d32', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 },
+  liveDotLarge: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.accent },
+  liveText: { fontSize: 12, fontFamily: Fonts.bodySemiBold, color: Colors.accent },
+  row: {
+    flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8,
+    borderBottomWidth: 1, borderBottomColor: Colors.border,
   },
-  readOnlineText: { color: '#fff', fontWeight: '800', fontSize: 16 },
+  label: { fontSize: 13, fontFamily: Fonts.bodyMedium, color: Colors.textSecond },
+  value: { fontSize: 13, fontFamily: Fonts.bodySemiBold, color: Colors.textPrimary },
+  valueAvail: { fontFamily: Fonts.bodySemiBold },
+  descCard: {
+    backgroundColor: Colors.surface, borderRadius: Radius.container, padding: 16, marginBottom: 16,
+    borderWidth: 1, borderColor: Colors.border, ...cardShadow,
+  },
+  descTitle: {
+    fontSize: 13, fontFamily: Fonts.heading, color: Colors.textPrimary, marginBottom: 8,
+    textTransform: 'uppercase', letterSpacing: 0.5,
+  },
+  desc: { fontSize: 13, fontFamily: Fonts.body, color: Colors.textSecond, lineHeight: 20 },
+  reviewsCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.container,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    ...cardShadow,
+  },
+  reviewsTitle: {
+    fontSize: 13, fontFamily: Fonts.heading, color: Colors.textPrimary, marginBottom: 10,
+    textTransform: 'uppercase', letterSpacing: 0.5,
+  },
+  ratingSummaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  avgWrap: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  avgText: { fontSize: 30, fontFamily: Fonts.heading, color: Colors.textPrimary, lineHeight: 36 },
+  totalReviewsText: { fontSize: 13, fontFamily: Fonts.bodyMedium, color: Colors.textSecond },
+  distWrap: { marginBottom: 14, gap: 8 },
+  distRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  distLabel: { width: 24, fontSize: 12, fontFamily: Fonts.bodySemiBold, color: Colors.textSecond },
+  distBarTrack: { flex: 1, height: 6, borderRadius: Radius.inner, backgroundColor: Colors.border, overflow: 'hidden' },
+  distBarFill: { height: '100%', backgroundColor: Colors.accent, borderRadius: Radius.inner },
+  distCount: { width: 20, textAlign: 'right', fontSize: 12, fontFamily: Fonts.bodySemiBold, color: Colors.textSecond },
+  reviewList: { gap: 10, marginBottom: 10 },
+  reviewItemCard: {
+    backgroundColor: Colors.background, borderRadius: Radius.container, padding: 12,
+    borderWidth: 1, borderColor: Colors.border,
+  },
+  reviewHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+  reviewerName: { fontSize: 13, fontFamily: Fonts.bodySemiBold, color: Colors.textPrimary },
+  reviewStars: { flexDirection: 'row', gap: 2 },
+  reviewComment: { fontSize: 13, fontFamily: Fonts.body, color: Colors.textSecond, lineHeight: 18, marginBottom: 8 },
+  reviewDate: { fontSize: 11, fontFamily: Fonts.bodyMedium, color: Colors.textMuted },
+  emptyReviewsText: { fontSize: 13, fontFamily: Fonts.body, color: Colors.textSecond, lineHeight: 19, marginBottom: 10 },
+  writeReviewBtn: {
+    backgroundColor: Colors.accent,
+    borderRadius: Radius.container,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 6,
+    elevation: 4,
+    shadowColor: Colors.shadow,
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+  },
+  writeReviewText: { color: '#fff', fontFamily: Fonts.bodySemiBold, fontSize: 14 },
+  readOnlineBtn: {
+    backgroundColor: Colors.accentDark, borderRadius: Radius.container, padding: 16, alignItems: 'center',
+    marginBottom: 20, flexDirection: 'row', justifyContent: 'center', gap: 8,
+    elevation: 4, shadowColor: Colors.shadow, shadowOpacity: 0.1, shadowRadius: 6, shadowOffset: { width: 0, height: 3 },
+  },
+  readOnlineText: { color: '#fff', fontFamily: Fonts.bodySemiBold, fontSize: 16 },
   borrowHint: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 8,
-    backgroundColor: Colors.brandMuted, borderRadius: 14, padding: 12, marginBottom: 12,
+    backgroundColor: Colors.accentMuted, borderRadius: Radius.container, padding: 12, marginBottom: 12,
   },
-  borrowHintText: { flex: 1, fontSize: 13, color: Colors.brandDark, lineHeight: 18, fontWeight: '600' },
+  borrowHintText: { flex: 1, fontSize: 13, fontFamily: Fonts.bodyMedium, color: Colors.accentDark, lineHeight: 18 },
   queueHint: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 8,
-    backgroundColor: '#fef3c7', borderRadius: 14, padding: 12, marginBottom: 12,
+    backgroundColor: Colors.surfaceMuted, borderRadius: Radius.container, padding: 12, marginBottom: 12,
+    borderWidth: 1, borderColor: Colors.border,
   },
-  queueHintText: { flex: 1, fontSize: 13, color: '#92400e', lineHeight: 18, fontWeight: '600' },
+  queueHintText: { flex: 1, fontSize: 13, fontFamily: Fonts.bodyMedium, color: Colors.textSecond, lineHeight: 18 },
   actionBtn: {
-    backgroundColor: Colors.brandDarker, borderRadius: 14, padding: 16,
+    backgroundColor: Colors.accentDark, borderRadius: Radius.container, padding: 16,
     alignItems: 'center', marginBottom: 20, flexDirection: 'row', justifyContent: 'center', gap: 8,
-    elevation: 5, shadowColor: '#2e7d32', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 },
+    elevation: 4, shadowColor: Colors.shadow, shadowOpacity: 0.1, shadowRadius: 6, shadowOffset: { width: 0, height: 3 },
   },
   joinQueueBtn: {
-    backgroundColor: '#f59e0b', borderRadius: 14, padding: 16,
+    backgroundColor: Colors.accent, borderRadius: Radius.container, padding: 16,
     alignItems: 'center', marginBottom: 20, flexDirection: 'row', justifyContent: 'center', gap: 8,
-    elevation: 5, shadowColor: '#f59e0b', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 },
+    elevation: 4, shadowColor: Colors.shadow, shadowOpacity: 0.1, shadowRadius: 6, shadowOffset: { width: 0, height: 3 },
   },
-  actionBtnText: { color: '#fff', fontWeight: '800', fontSize: 16 },
+  actionBtnText: { color: '#fff', fontFamily: Fonts.bodySemiBold, fontSize: 16 },
   disabledBtn: { backgroundColor: Colors.textMuted, elevation: 0, shadowOpacity: 0 },
-  empty: { textAlign: 'center', marginTop: 60, color: Colors.textMuted },
+  empty: { textAlign: 'center', marginTop: 60, fontFamily: Fonts.body, color: Colors.textMuted },
 });

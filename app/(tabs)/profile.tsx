@@ -5,7 +5,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/context/AuthContext';
 import api from '@/lib/api';
-import Colors from '@/constants/colors';
+import Colors, { Radius } from '@/constants/colors';
+import { Fonts } from '@/constants/typography';
+
+const cardShadow = {
+  elevation: 2 as const,
+  shadowColor: Colors.shadow,
+  shadowOpacity: 0.05,
+  shadowRadius: 4,
+  shadowOffset: { width: 0, height: 2 },
+};
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -36,7 +45,7 @@ export default function ProfileScreen() {
         {profileImage ? (
           <Image source={{ uri: profileImage }} style={styles.avatarImg} />
         ) : (
-          <LinearGradient colors={['#2e7d32', '#15803d']} style={styles.avatar}>
+          <LinearGradient colors={[Colors.accent, Colors.accentDark]} style={styles.avatar}>
             <Text style={styles.avatarText}>{user?.name?.charAt(0).toUpperCase()}</Text>
           </LinearGradient>
         )}
@@ -59,7 +68,7 @@ export default function ProfileScreen() {
         style={styles.editBtn} 
         onPress={() => router.push('/settings')}
       >
-        <Ionicons name="settings-outline" size={20} color={Colors.brand} />
+        <Ionicons name="settings-outline" size={20} color={Colors.accent} />
         <Text style={styles.editText}>Settings</Text>
       </TouchableOpacity>
 
@@ -67,7 +76,7 @@ export default function ProfileScreen() {
         style={styles.rateBtn} 
         onPress={() => router.push('/rate')}
       >
-        <Ionicons name="star-outline" size={20} color="#f59e0b" />
+        <Ionicons name="star-outline" size={20} color={Colors.accent} />
         <Text style={styles.rateText}>Rate a Librarian</Text>
       </TouchableOpacity>
 
@@ -81,44 +90,47 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background, padding: 24 },
+  avatarWrap: { alignItems: 'center', marginBottom: 8 },
   avatar: {
     width: 80, height: 80, borderRadius: 40,
     justifyContent: 'center', alignItems: 'center', marginBottom: 12,
-    elevation: 6, shadowColor: '#2e7d32', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 6 },
+    ...cardShadow,
   },
   avatarImg: { width: 80, height: 80, borderRadius: 40, marginBottom: 12 },
-  avatarText: { fontSize: 32, fontWeight: '800', color: '#fff' },
-  name: { fontSize: 20, fontWeight: '900', color: Colors.textPrimary },
-  email: { fontSize: 14, color: Colors.textSecond, marginTop: 2, fontWeight: '500' },
-  roleBadge: { marginTop: 8, backgroundColor: Colors.brandMuted, paddingHorizontal: 14, paddingVertical: 5, borderRadius: 20 },
-  roleText: { color: Colors.brandDarker, fontSize: 12, fontWeight: '800', letterSpacing: 0.3 },
+  avatarText: { fontSize: 32, fontFamily: Fonts.heading, color: '#fff' },
+  name: { fontSize: 20, fontFamily: Fonts.heading, color: Colors.textPrimary },
+  email: { fontSize: 14, fontFamily: Fonts.body, color: Colors.textSecond, marginTop: 2 },
+  roleBadge: {
+    marginTop: 8, backgroundColor: Colors.accentMuted,
+    paddingHorizontal: 14, paddingVertical: 5, borderRadius: Radius.inner,
+  },
+  roleText: {
+    color: Colors.accentDark, fontSize: 12, fontFamily: Fonts.bodyBold,
+    letterSpacing: 0.3, textTransform: 'uppercase',
+  },
   card: {
-    backgroundColor: Colors.surface, borderRadius: 20, padding: 16, marginBottom: 16,
-    elevation: 4, shadowColor: Colors.shadow, shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 4 },
+    backgroundColor: Colors.surface, borderRadius: Radius.container, padding: 16, marginBottom: 16,
+    borderWidth: 1, borderColor: Colors.border, ...cardShadow,
   },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  label: { flex: 1, fontSize: 14, color: Colors.textSecond, fontWeight: '600' },
-  value: { fontSize: 14, fontWeight: '700', color: Colors.textPrimary },
+  label: { flex: 1, fontSize: 14, fontFamily: Fonts.bodyMedium, color: Colors.textSecond },
+  value: { fontSize: 14, fontFamily: Fonts.bodySemiBold, color: Colors.textPrimary },
   editBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    backgroundColor: Colors.brandMuted, borderRadius: 14, padding: 14, marginBottom: 12,
-    elevation: 2, shadowColor: Colors.brand, shadowOpacity: 0.15, shadowRadius: 6, shadowOffset: { width: 0, height: 3 },
+    backgroundColor: Colors.accentMuted, borderRadius: Radius.container, padding: 14, marginBottom: 12,
+    borderWidth: 1, borderColor: Colors.border,
   },
-  editText: { color: Colors.brandDarker, fontWeight: '800', fontSize: 15 },
+  editText: { color: Colors.accentDark, fontFamily: Fonts.bodySemiBold, fontSize: 15 },
   rateBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    backgroundColor: '#fef3c7', borderRadius: 14, padding: 14, marginBottom: 12,
-    elevation: 2, shadowColor: '#f59e0b', shadowOpacity: 0.15, shadowRadius: 6, shadowOffset: { width: 0, height: 3 },
+    backgroundColor: Colors.surface, borderRadius: Radius.container, padding: 14, marginBottom: 12,
+    borderWidth: 1, borderColor: Colors.border, ...cardShadow,
   },
-  rateText: { color: '#d97706', fontWeight: '800', fontSize: 15 },
-  chatBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    backgroundColor: '#f5f3ff', borderRadius: 14, padding: 14, marginBottom: 12,
-  },
-  chatText: { color: '#7c3aed', fontWeight: '800', fontSize: 15 },
+  rateText: { color: Colors.textPrimary, fontFamily: Fonts.bodySemiBold, fontSize: 15 },
   logoutBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    backgroundColor: Colors.errorBg, borderRadius: 14, padding: 14,
+    backgroundColor: Colors.errorBg, borderRadius: Radius.container, padding: 14,
+    borderWidth: 1, borderColor: Colors.error,
   },
-  logoutText: { color: Colors.error, fontWeight: '800', fontSize: 15 },
+  logoutText: { color: Colors.error, fontFamily: Fonts.bodySemiBold, fontSize: 15 },
 });

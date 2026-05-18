@@ -9,7 +9,16 @@ import * as ImagePicker from 'expo-image-picker';
 import api from '@/lib/api';
 import { getPreferences, savePreferences, uploadProfileImage, deleteProfileImage } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
-import Colors from '@/constants/colors';
+import Colors, { Radius } from '@/constants/colors';
+import { Fonts } from '@/constants/typography';
+
+const cardShadow = {
+  elevation: 2 as const,
+  shadowColor: Colors.shadow,
+  shadowOpacity: 0.05,
+  shadowRadius: 4,
+  shadowOffset: { width: 0, height: 2 },
+};
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -55,7 +64,7 @@ function ToggleRow({ label, description, value, onChange }: {
         <Text style={styles.toggleDesc}>{description}</Text>
       </View>
       <Switch value={value} onValueChange={onChange}
-        trackColor={{ false: Colors.border, true: Colors.brand }} thumbColor="#fff" />
+        trackColor={{ false: Colors.border, true: Colors.accent }} thumbColor="#fff" />
     </View>
   );
 }
@@ -204,7 +213,7 @@ export default function SettingsScreen() {
   if (loading) {
     return (
       <View style={styles.loadingWrap}>
-        <ActivityIndicator size="large" color={Colors.brand} />
+        <ActivityIndicator size="large" color={Colors.accent} />
       </View>
     );
   }
@@ -384,95 +393,92 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: 16, paddingVertical: 12,
-    backgroundColor: Colors.surface, borderBottomWidth: 1, borderBottomColor: Colors.border, elevation: 2,
+    backgroundColor: Colors.surface, borderBottomWidth: 1, borderBottomColor: Colors.border,
+    ...cardShadow,
   },
   backBtn: { padding: 4, marginRight: 12 },
-  headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: Colors.textPrimary },
+  headerTitle: { flex: 1, fontSize: 17, fontFamily: Fonts.heading, color: Colors.textPrimary },
   content: { padding: 20, paddingBottom: 40 },
 
-  // Section
-  sectionTitle: { fontSize: 15, fontWeight: '800', color: Colors.textPrimary, marginTop: 24, marginBottom: 12 },
-  sectionSub: { fontSize: 13, color: Colors.textSecond, marginBottom: 12, marginTop: -8 },
+  sectionTitle: {
+    fontSize: 13, fontFamily: Fonts.heading, color: Colors.textPrimary,
+    marginTop: 24, marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5,
+  },
+  sectionSub: { fontSize: 13, fontFamily: Fonts.body, color: Colors.textSecond, marginBottom: 12, marginTop: -8 },
 
-  // Avatar row
   avatarRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 16 },
   avatarWrap: { position: 'relative' },
   avatar: {
     width: 64, height: 64, borderRadius: 32,
-    backgroundColor: Colors.brand, justifyContent: 'center', alignItems: 'center',
+    backgroundColor: Colors.accent, justifyContent: 'center', alignItems: 'center',
   },
   avatarImg: { width: 64, height: 64, borderRadius: 32 },
   avatarEditBadge: {
     position: 'absolute', bottom: 0, right: 0,
     width: 22, height: 22, borderRadius: 11,
-    backgroundColor: Colors.brand, justifyContent: 'center', alignItems: 'center',
+    backgroundColor: Colors.accent, justifyContent: 'center', alignItems: 'center',
     borderWidth: 2, borderColor: Colors.background,
   },
-  avatarText: { fontSize: 20, fontWeight: '700', color: '#fff' },
+  avatarText: { fontSize: 20, fontFamily: Fonts.bodySemiBold, color: '#fff' },
   avatarMeta: { flex: 1 },
-  avatarName: { fontSize: 15, fontWeight: '700', color: Colors.textPrimary },
-  avatarSub: { fontSize: 12, color: Colors.textMuted, marginTop: 2 },
+  avatarName: { fontSize: 15, fontFamily: Fonts.bodySemiBold, color: Colors.textPrimary },
+  avatarSub: { fontSize: 12, fontFamily: Fonts.body, color: Colors.textMuted, marginTop: 2 },
   avatarActions: { flexDirection: 'row', gap: 8, marginTop: 8 },
   avatarBtn: {
-    paddingHorizontal: 12, paddingVertical: 5, borderRadius: 8,
+    paddingHorizontal: 12, paddingVertical: 5, borderRadius: Radius.container,
     borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface,
   },
   avatarBtnDanger: { borderColor: Colors.error },
-  avatarBtnText: { fontSize: 12, fontWeight: '600', color: Colors.brand },
+  avatarBtnText: { fontSize: 12, fontFamily: Fonts.bodySemiBold, color: Colors.accent },
 
-  // Card
   card: {
-    backgroundColor: Colors.surface, borderRadius: 14,
-    paddingHorizontal: 16, elevation: 2,
-    shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4,
+    backgroundColor: Colors.surface, borderRadius: Radius.container,
+    paddingHorizontal: 16, borderWidth: 1, borderColor: Colors.border, ...cardShadow,
   },
   divider: { height: 1, backgroundColor: Colors.border },
   field: { paddingVertical: 12 },
-  fieldLabel: { fontSize: 13, fontWeight: '600', color: Colors.textSecond, marginBottom: 6 },
+  fieldLabel: { fontSize: 13, fontFamily: Fonts.bodyMedium, color: Colors.textSecond, marginBottom: 6 },
 
-  // Inputs
   input: {
     backgroundColor: Colors.background, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10,
-    fontSize: 14, color: Colors.textPrimary,
+    borderRadius: Radius.container, paddingHorizontal: 12, paddingVertical: 10,
+    fontSize: 14, fontFamily: Fonts.body, color: Colors.textPrimary,
   },
-  inputDisabled: { backgroundColor: '#f3f4f6', color: Colors.textMuted },
+  inputDisabled: { backgroundColor: Colors.surfaceMuted, color: Colors.textMuted },
   textArea: { minHeight: 72, paddingTop: 10, textAlignVertical: 'top' },
-  helperText: { fontSize: 11, color: Colors.textMuted, marginTop: 4 },
+  helperText: { fontSize: 11, fontFamily: Fonts.body, color: Colors.textMuted, marginTop: 4 },
 
-  // Gender
   genderRow: { flexDirection: 'row', gap: 8 },
   genderBtn: {
-    flex: 1, paddingVertical: 10, borderRadius: 10,
+    flex: 1, paddingVertical: 10, borderRadius: Radius.container,
     borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.background, alignItems: 'center',
   },
-  genderBtnActive: { backgroundColor: Colors.brand, borderColor: Colors.brand },
-  genderBtnText: { fontSize: 13, fontWeight: '600', color: Colors.textSecond },
-  genderBtnTextActive: { color: '#fff' },
+  genderBtnActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
+  genderBtnText: { fontSize: 13, fontFamily: Fonts.bodySemiBold, color: Colors.textSecond },
+  genderBtnTextActive: { color: '#fff', fontFamily: Fonts.bodySemiBold },
 
-  // Category chips
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
   chip: {
-    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
+    paddingHorizontal: 14, paddingVertical: 8, borderRadius: Radius.container,
     borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface,
   },
-  chipSelected: { backgroundColor: Colors.brand, borderColor: Colors.brand },
+  chipSelected: { backgroundColor: Colors.accent, borderColor: Colors.accent },
   chipDisabled: { opacity: 0.4 },
-  chipText: { fontSize: 13, fontWeight: '600', color: Colors.textPrimary },
-  chipTextSelected: { color: '#fff' },
-  chipCount: { fontSize: 13, fontWeight: '700', color: Colors.brand, marginBottom: 8 },
+  chipText: { fontSize: 13, fontFamily: Fonts.bodySemiBold, color: Colors.textPrimary },
+  chipTextSelected: { color: '#fff', fontFamily: Fonts.bodySemiBold },
+  chipCount: { fontSize: 13, fontFamily: Fonts.bodySemiBold, color: Colors.accent, marginBottom: 8 },
 
-  // Toggle
   toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14 },
   toggleText: { flex: 1 },
-  toggleLabel: { fontSize: 14, fontWeight: '700', color: Colors.textPrimary },
-  toggleDesc: { fontSize: 12, color: Colors.textSecond, marginTop: 2 },
+  toggleLabel: { fontSize: 14, fontFamily: Fonts.bodySemiBold, color: Colors.textPrimary },
+  toggleDesc: { fontSize: 12, fontFamily: Fonts.body, color: Colors.textSecond, marginTop: 2 },
 
-  // Save button
   saveBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    backgroundColor: Colors.brand, borderRadius: 12, padding: 14, marginTop: 16,
+    backgroundColor: Colors.accent, borderRadius: Radius.container, padding: 14, marginTop: 16,
+    elevation: 4, shadowColor: Colors.shadow, shadowOpacity: 0.1, shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
   },
   saveBtnDisabled: { opacity: 0.6 },
-  saveBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  saveBtnText: { color: '#fff', fontSize: 15, fontFamily: Fonts.bodySemiBold },
 });

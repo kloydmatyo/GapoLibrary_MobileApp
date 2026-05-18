@@ -7,7 +7,16 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import api from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
-import Colors from '@/constants/colors';
+import Colors, { Radius } from '@/constants/colors';
+import { Fonts } from '@/constants/typography';
+
+const cardShadow = {
+  elevation: 2 as const,
+  shadowColor: Colors.shadow,
+  shadowOpacity: 0.05,
+  shadowRadius: 4,
+  shadowOffset: { width: 0, height: 2 },
+};
 
 interface UserProfile {
   firstName: string;
@@ -99,7 +108,7 @@ export default function EditProfileScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={Colors.brand} />
+        <ActivityIndicator size="large" color={Colors.accent} />
       </View>
     );
   }
@@ -261,15 +270,9 @@ export default function EditProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
+  container: { flex: 1, backgroundColor: Colors.background },
   loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: Colors.background,
+    flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -279,132 +282,66 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
+    ...cardShadow,
   },
-  backButton: {
-    padding: 4,
-    marginRight: 12,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    flex: 1,
-  },
-  headerSpacer: {
-    width: 40,
-  },
-  content: {
-    flex: 1,
-  },
-  contentContainer: {
-    padding: 20,
-  },
-  avatarSection: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
+  backButton: { padding: 4, marginRight: 12 },
+  headerTitle: { fontSize: 20, fontFamily: Fonts.heading, color: Colors.textPrimary, flex: 1 },
+  headerSpacer: { width: 40 },
+  content: { flex: 1 },
+  contentContainer: { padding: 20 },
+  avatarSection: { alignItems: 'center', marginBottom: 24 },
   avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: Colors.brand,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
+    width: 80, height: 80, borderRadius: 40,
+    backgroundColor: Colors.accent, justifyContent: 'center', alignItems: 'center', marginBottom: 8,
   },
-  avatarText: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  patronId: {
-    fontSize: 13,
-    color: Colors.textMuted,
-  },
-  form: {
-    marginBottom: 20,
-  },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.textPrimary,
-    marginBottom: 8,
-  },
-  required: {
-    color: Colors.error,
-  },
+  avatarText: { fontSize: 28, fontFamily: Fonts.heading, color: '#fff' },
+  patronId: { fontSize: 13, fontFamily: Fonts.body, color: Colors.textMuted },
+  form: { marginBottom: 20 },
+  inputGroup: { marginBottom: 20 },
+  label: { fontSize: 14, fontFamily: Fonts.bodyMedium, color: Colors.textPrimary, marginBottom: 8 },
+  required: { color: Colors.error },
   input: {
     backgroundColor: Colors.surface,
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: 12,
+    borderRadius: Radius.container,
     padding: 12,
     fontSize: 14,
+    fontFamily: Fonts.body,
     color: Colors.textPrimary,
   },
-  inputDisabled: {
-    backgroundColor: '#f3f4f6',
-    color: Colors.textMuted,
-  },
-  textArea: {
-    minHeight: 80,
-    paddingTop: 12,
-  },
-  helperText: {
-    fontSize: 12,
-    color: Colors.textMuted,
-    marginTop: 4,
-  },
-  genderButtons: {
-    flexDirection: 'row',
-    gap: 8,
-  },
+  inputDisabled: { backgroundColor: Colors.surfaceMuted, color: Colors.textMuted },
+  textArea: { minHeight: 80, paddingTop: 12 },
+  helperText: { fontSize: 12, fontFamily: Fonts.body, color: Colors.textMuted, marginTop: 4 },
+  genderButtons: { flexDirection: 'row', gap: 8 },
   genderButton: {
     flex: 1,
     paddingVertical: 12,
     paddingHorizontal: 16,
-    borderRadius: 12,
+    borderRadius: Radius.container,
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.surface,
     alignItems: 'center',
   },
-  genderButtonActive: {
-    backgroundColor: Colors.brand,
-    borderColor: Colors.brand,
-  },
-  genderButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.textSecond,
-  },
-  genderButtonTextActive: {
-    color: '#fff',
-  },
+  genderButtonActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
+  genderButtonText: { fontSize: 14, fontFamily: Fonts.bodySemiBold, color: Colors.textSecond },
+  genderButtonTextActive: { color: '#fff', fontFamily: Fonts.bodySemiBold },
   saveButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: Colors.brand,
-    borderRadius: 12,
+    backgroundColor: Colors.accent,
+    borderRadius: Radius.container,
     padding: 16,
     marginBottom: 20,
+    elevation: 4,
+    shadowColor: Colors.shadow,
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
   },
-  saveButtonDisabled: {
-    opacity: 0.6,
-  },
-  saveButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
+  saveButtonDisabled: { opacity: 0.6 },
+  saveButtonText: { color: '#fff', fontSize: 16, fontFamily: Fonts.bodySemiBold },
 });

@@ -47,6 +47,11 @@ export const getBooks = (params?: { search?: string; category?: string; availabl
 
 export const getBook = (id: string) => api.get(`/books/${id}`);
 
+export const getBookReviews = (id: string) => api.get(`/books/${id}/reviews`);
+
+export const submitBookReview = (id: string, score: number, comment?: string) =>
+  api.post(`/books/${id}/reviews`, { score, comment });
+
 // --- Circulation ---
 export const getHistory = (userId?: string) =>
   api.get('/circulation/history', { params: userId ? { userId } : {} });

@@ -6,7 +6,16 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import api from '@/lib/api';
-import Colors from '@/constants/colors';
+import Colors, { Radius } from '@/constants/colors';
+import { Fonts } from '@/constants/typography';
+
+const cardShadow = {
+  elevation: 2 as const,
+  shadowColor: Colors.shadow,
+  shadowOpacity: 0.05,
+  shadowRadius: 4,
+  shadowOffset: { width: 0, height: 2 },
+};
 
 interface Event {
   _id: string;
@@ -78,12 +87,12 @@ export default function EventsScreen() {
 
   const getEventStatus = (event: Event) => {
     if (isOngoing(event.startDate, event.endDate)) {
-      return { label: 'Ongoing', color: Colors.brand, bg: Colors.brandMuted };
+      return { label: 'Ongoing', color: Colors.accent, bg: Colors.accentMuted };
     }
     if (isUpcoming(event.startDate)) {
-      return { label: 'Upcoming', color: '#f59e0b', bg: '#fef3c7' };
+      return { label: 'Upcoming', color: Colors.accentDark, bg: Colors.accentMuted };
     }
-    return { label: 'Past', color: '#6b7280', bg: '#f3f4f6' };
+    return { label: 'Past', color: Colors.statusReturned, bg: Colors.statusReturnedBg };
   };
 
   const renderEvent = ({ item }: { item: Event }) => {
@@ -104,7 +113,7 @@ export default function EventsScreen() {
           <Image source={{ uri: item.imageUrl }} style={styles.eventImage} />
         ) : (
           <View style={styles.imagePlaceholder}>
-            <Ionicons name="calendar" size={48} color={Colors.brand} />
+            <Ionicons name="calendar" size={48} color={Colors.accent} />
           </View>
         )}
 
@@ -155,7 +164,7 @@ export default function EventsScreen() {
   if (loading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={Colors.brand} />
+        <ActivityIndicator size="large" color={Colors.accent} />
       </View>
     );
   }
@@ -177,7 +186,7 @@ export default function EventsScreen() {
         renderItem={renderEvent}
         contentContainerStyle={styles.listContent}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.brand]} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.accent]} />
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
@@ -192,15 +201,9 @@ export default function EventsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
+  container: { flex: 1, backgroundColor: Colors.background },
   centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: Colors.background,
+    flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -210,43 +213,22 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
+    ...cardShadow,
   },
-  backButton: {
-    padding: 4,
-    marginRight: 12,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    flex: 1,
-  },
-  headerSpacer: {
-    width: 40,
-  },
-  listContent: {
-    padding: 16,
-  },
+  backButton: { padding: 4, marginRight: 12 },
+  headerTitle: { fontSize: 20, fontFamily: Fonts.heading, color: Colors.textPrimary, flex: 1 },
+  headerSpacer: { width: 40 },
+  listContent: { padding: 16 },
   eventCard: {
     backgroundColor: Colors.surface,
-    borderRadius: 16,
+    borderRadius: Radius.container,
     marginBottom: 16,
     overflow: 'hidden',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
+    borderWidth: 1,
+    borderColor: Colors.border,
+    ...cardShadow,
   },
-  highlightedCard: {
-    borderWidth: 2,
-    borderColor: Colors.brand,
-  },
+  highlightedCard: { borderWidth: 2, borderColor: Colors.accent },
   highlightBadge: {
     position: 'absolute',
     top: 12,
@@ -254,79 +236,43 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: Colors.brand,
+    backgroundColor: Colors.accent,
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 20,
+    borderRadius: Radius.inner,
     zIndex: 1,
   },
-  highlightText: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  eventImage: {
-    width: '100%',
-    height: 180,
-  },
+  highlightText: { color: '#fff', fontSize: 11, fontFamily: Fonts.bodyBold },
+  eventImage: { width: '100%', height: 180 },
   imagePlaceholder: {
-    width: '100%',
-    height: 180,
-    backgroundColor: Colors.brandLight,
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: '100%', height: 180, backgroundColor: Colors.accentMuted,
+    justifyContent: 'center', alignItems: 'center',
   },
-  eventContent: {
-    padding: 16,
-  },
+  eventContent: { padding: 16 },
   statusBadge: {
     alignSelf: 'flex-start',
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: Radius.inner,
     marginBottom: 8,
   },
   statusText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: Fonts.bodyBold,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   eventTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    marginBottom: 12,
+    fontSize: 18, fontFamily: Fonts.heading, color: Colors.textPrimary, marginBottom: 12,
   },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
-  },
-  infoText: {
-    fontSize: 13,
-    color: Colors.textSecond,
-  },
+  infoRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+  infoText: { fontSize: 13, fontFamily: Fonts.body, color: Colors.textSecond },
   eventDescription: {
-    fontSize: 14,
-    color: Colors.textSecond,
-    lineHeight: 20,
-    marginTop: 8,
+    fontSize: 14, fontFamily: Fonts.body, color: Colors.textSecond, lineHeight: 20, marginTop: 8,
   },
-  emptyContainer: {
-    alignItems: 'center',
-    paddingVertical: 80,
-  },
+  emptyContainer: { alignItems: 'center', paddingVertical: 80, paddingHorizontal: 32 },
   emptyTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    marginTop: 16,
-    marginBottom: 8,
+    fontSize: 18, fontFamily: Fonts.heading, color: Colors.textPrimary, marginTop: 16, marginBottom: 8,
   },
-  emptyText: {
-    fontSize: 14,
-    color: Colors.textMuted,
-  },
+  emptyText: { fontSize: 14, fontFamily: Fonts.body, color: Colors.textMuted, textAlign: 'center' },
 });

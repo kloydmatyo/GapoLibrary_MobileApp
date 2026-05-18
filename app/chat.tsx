@@ -7,7 +7,8 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { sendChatMessage } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
-import Colors from '@/constants/colors';
+import Colors, { Radius } from '@/constants/colors';
+import { Fonts } from '@/constants/typography';
 
 interface Message {
   id: string;
@@ -95,7 +96,7 @@ export default function ChatScreen() {
       <View style={[styles.msgRow, isUser ? styles.msgRowUser : styles.msgRowAssistant]}>
         {!isUser && (
           <View style={styles.avatar}>
-            <Ionicons name="sparkles" size={16} color={Colors.brand} />
+            <Ionicons name="sparkles" size={16} color={Colors.accent} />
           </View>
         )}
         <View style={[styles.bubble, isUser ? styles.bubbleUser : styles.bubbleAssistant]}>
@@ -118,7 +119,7 @@ export default function ChatScreen() {
         </TouchableOpacity>
         <View style={styles.headerInfo}>
           <View style={styles.headerIcon}>
-            <Ionicons name="sparkles" size={18} color={Colors.brand} />
+            <Ionicons name="sparkles" size={18} color={Colors.accent} />
           </View>
           <View>
             <Text style={styles.headerTitle}>GAPO Assistant</Text>
@@ -148,10 +149,10 @@ export default function ChatScreen() {
             loading ? (
               <View style={styles.typingIndicator}>
                 <View style={styles.avatar}>
-                  <Ionicons name="sparkles" size={16} color={Colors.brand} />
+                  <Ionicons name="sparkles" size={16} color={Colors.accent} />
                 </View>
                 <View style={styles.bubbleAssistant}>
-                  <ActivityIndicator size="small" color={Colors.brand} />
+                  <ActivityIndicator size="small" color={Colors.accent} />
                 </View>
               </View>
             ) : null
@@ -201,6 +202,14 @@ export default function ChatScreen() {
   );
 }
 
+const cardShadow = {
+  elevation: 2 as const,
+  shadowColor: Colors.shadow,
+  shadowOpacity: 0.05,
+  shadowRadius: 4,
+  shadowOffset: { width: 0, height: 2 },
+};
+
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   container: { flex: 1, backgroundColor: Colors.background },
@@ -209,44 +218,44 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, paddingVertical: 12,
     backgroundColor: Colors.surface,
     borderBottomWidth: 1, borderBottomColor: Colors.border,
-    elevation: 2,
+    ...cardShadow,
   },
   backBtn: { padding: 4, marginRight: 12 },
   headerInfo: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
   headerIcon: {
-    width: 36, height: 36, borderRadius: 10,
-    backgroundColor: Colors.brandLight, justifyContent: 'center', alignItems: 'center',
+    width: 36, height: 36, borderRadius: Radius.container,
+    backgroundColor: Colors.accentMuted, justifyContent: 'center', alignItems: 'center',
   },
-  headerTitle: { fontSize: 15, fontWeight: '700', color: Colors.textPrimary },
+  headerTitle: { fontSize: 15, fontFamily: Fonts.bodySemiBold, color: Colors.textPrimary },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 },
-  statusDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: Colors.brand },
-  statusDotLoading: { backgroundColor: '#f59e0b' },
-  statusText: { fontSize: 11, color: Colors.textSecond, fontWeight: '500' },
+  statusDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: Colors.accent },
+  statusDotLoading: { backgroundColor: Colors.textMuted },
+  statusText: { fontSize: 11, fontFamily: Fonts.body, color: Colors.textSecond },
   messageList: { padding: 16, paddingBottom: 8 },
   msgRow: { flexDirection: 'row', marginBottom: 12, alignItems: 'flex-end', gap: 8 },
   msgRowUser: { justifyContent: 'flex-end' },
   msgRowAssistant: { justifyContent: 'flex-start' },
   avatar: {
     width: 30, height: 30, borderRadius: 15,
-    backgroundColor: Colors.brandLight, justifyContent: 'center', alignItems: 'center',
+    backgroundColor: Colors.accentMuted, justifyContent: 'center', alignItems: 'center',
     flexShrink: 0,
   },
   bubble: {
-    maxWidth: '78%', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 18,
+    maxWidth: '78%', paddingHorizontal: 14, paddingVertical: 10, borderRadius: Radius.container,
   },
   bubbleUser: {
-    backgroundColor: Colors.brand,
-    borderBottomRightRadius: 4,
+    backgroundColor: Colors.accentDark,
+    borderBottomRightRadius: Radius.inner,
   },
   bubbleAssistant: {
     backgroundColor: Colors.surface,
-    borderBottomLeftRadius: 4,
+    borderBottomLeftRadius: Radius.inner,
     borderWidth: 1, borderColor: Colors.border,
     paddingHorizontal: 14, paddingVertical: 10,
   },
   bubbleText: { fontSize: 14, lineHeight: 20 },
-  bubbleTextUser: { color: '#fff' },
-  bubbleTextAssistant: { color: Colors.textPrimary },
+  bubbleTextUser: { color: '#fff', fontFamily: Fonts.body },
+  bubbleTextAssistant: { color: Colors.textPrimary, fontFamily: Fonts.body },
   typingIndicator: {
     flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginBottom: 12,
   },
@@ -256,18 +265,18 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
   },
   quickActionsLabel: {
-    fontSize: 11, fontWeight: '700', color: Colors.textMuted,
+    fontSize: 11, fontFamily: Fonts.bodyBold, color: Colors.textMuted,
     textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8,
   },
   quickActionsScroll: { gap: 8, paddingBottom: 8 },
   quickChip: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: Colors.background, borderRadius: 20,
+    backgroundColor: Colors.background, borderRadius: Radius.container,
     paddingHorizontal: 14, paddingVertical: 8,
     borderWidth: 1, borderColor: Colors.border,
   },
   quickChipIcon: { fontSize: 16 },
-  quickChipLabel: { fontSize: 13, fontWeight: '600', color: Colors.textPrimary },
+  quickChipLabel: { fontSize: 13, fontFamily: Fonts.bodySemiBold, color: Colors.textPrimary },
   inputBar: {
     flexDirection: 'row', alignItems: 'flex-end', gap: 8,
     paddingHorizontal: 16, paddingVertical: 12,
@@ -276,14 +285,15 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1, backgroundColor: Colors.background,
-    borderRadius: 22, paddingHorizontal: 16, paddingVertical: 10,
+    borderRadius: Radius.container, paddingHorizontal: 16, paddingVertical: 10,
     borderWidth: 1, borderColor: Colors.border,
-    fontSize: 14, color: Colors.textPrimary,
+    fontSize: 14, fontFamily: Fonts.body, color: Colors.textPrimary,
     maxHeight: 100,
   },
   sendBtn: {
     width: 44, height: 44, borderRadius: 22,
-    backgroundColor: Colors.brand, justifyContent: 'center', alignItems: 'center',
+    backgroundColor: Colors.accent, justifyContent: 'center', alignItems: 'center',
+    elevation: 4, shadowColor: Colors.shadow, shadowOpacity: 0.1, shadowRadius: 6, shadowOffset: { width: 0, height: 3 },
   },
   sendBtnDisabled: { opacity: 0.4 },
 });

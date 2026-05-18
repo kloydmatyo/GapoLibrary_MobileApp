@@ -4,7 +4,16 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getCirculationHistory, getMyRatings } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
-import Colors from '@/constants/colors';
+import Colors, { Radius } from '@/constants/colors';
+import { Fonts } from '@/constants/typography';
+
+const cardShadow = {
+  elevation: 2 as const,
+  shadowColor: Colors.shadow,
+  shadowOpacity: 0.05,
+  shadowRadius: 4,
+  shadowOffset: { width: 0, height: 2 },
+};
 
 interface Transaction {
   _id: string;
@@ -109,7 +118,7 @@ export default function RateScreen() {
   if (authLoading) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator color={Colors.brand} size="large" />
+        <ActivityIndicator color={Colors.accent} size="large" />
       </View>
     );
   }
@@ -133,7 +142,7 @@ export default function RateScreen() {
         </View>
 
         {loading ? (
-          <ActivityIndicator color={Colors.brand} style={{ marginVertical: 24 }} />
+          <ActivityIndicator color={Colors.accent} style={{ marginVertical: 24 }} />
         ) : transactions.length === 0 ? (
           <View style={styles.emptyStateContainer}>
             <Ionicons name="checkmark-done-outline" size={48} color={Colors.textMuted} />
@@ -202,81 +211,78 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, paddingVertical: 12,
     backgroundColor: Colors.surface,
     borderBottomWidth: 1, borderBottomColor: Colors.border,
-    elevation: 2,
+    ...cardShadow,
   },
   backBtn: { padding: 4, marginRight: 12 },
-  headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: Colors.textPrimary },
+  headerTitle: { flex: 1, fontSize: 17, fontFamily: Fonts.heading, color: Colors.textPrimary },
   content: { padding: 20, paddingBottom: 40 },
   notice: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 10,
-    backgroundColor: '#eff6ff', borderRadius: 12, padding: 14, marginBottom: 24,
+    backgroundColor: Colors.accentMuted, borderRadius: Radius.container, padding: 14, marginBottom: 24,
+    borderWidth: 1, borderColor: Colors.border,
   },
-  noticeText: { flex: 1, fontSize: 13, color: '#1e40af', lineHeight: 18, fontWeight: '500' },
+  noticeText: { flex: 1, fontSize: 13, fontFamily: Fonts.body, color: Colors.accentDark, lineHeight: 18 },
   sectionLabel: {
-    fontSize: 15, fontWeight: '700', color: Colors.textPrimary, marginBottom: 12, marginTop: 8,
+    fontSize: 13, fontFamily: Fonts.heading, color: Colors.textPrimary, marginBottom: 12, marginTop: 8,
+    textTransform: 'uppercase', letterSpacing: 0.5,
   },
   transactionCard: {
-    backgroundColor: Colors.surface, borderRadius: 14, padding: 14,
-    marginBottom: 10, borderWidth: 1, borderColor: Colors.border,
-    opacity: 1,
+    backgroundColor: Colors.surface, borderRadius: Radius.container, padding: 14,
+    marginBottom: 10, borderWidth: 1, borderColor: Colors.border, ...cardShadow,
   },
   transactionCardSelected: {
-    borderColor: Colors.brand, backgroundColor: Colors.brandMuted,
+    borderColor: Colors.accent, backgroundColor: Colors.accentMuted,
   },
-  transactionCardDisabled: {
-    opacity: 0.5,
-  },
+  transactionCardDisabled: { opacity: 0.5 },
   transactionHeader: {
     flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between',
     marginBottom: 10,
   },
   bookInfo: { flex: 1, marginRight: 8 },
-  bookTitle: { fontSize: 15, fontWeight: '700', color: Colors.textPrimary },
-  bookAuthor: { fontSize: 13, color: Colors.textSecond, marginTop: 2 },
+  bookTitle: { fontSize: 15, fontFamily: Fonts.bodySemiBold, color: Colors.textPrimary },
+  bookAuthor: { fontSize: 13, fontFamily: Fonts.body, color: Colors.textSecond, marginTop: 2 },
   transactionDetails: { gap: 6 },
   detailRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  detailText: { fontSize: 13, color: Colors.textSecond },
+  detailText: { fontSize: 13, fontFamily: Fonts.body, color: Colors.textSecond },
   ratedBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: '#10b981', paddingHorizontal: 8, paddingVertical: 4,
-    borderRadius: 6, alignSelf: 'flex-start', marginTop: 8,
+    backgroundColor: Colors.accent, paddingHorizontal: 8, paddingVertical: 4,
+    borderRadius: Radius.inner, alignSelf: 'flex-start', marginTop: 8,
   },
-  ratedBadgeText: { fontSize: 12, fontWeight: '600', color: '#fff' },
-  emptyStateContainer: {
-    alignItems: 'center', justifyContent: 'center', paddingVertical: 40,
-  },
+  ratedBadgeText: { fontSize: 12, fontFamily: Fonts.bodyBold, color: '#fff' },
+  emptyStateContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 40 },
   emptyStateTitle: {
-    fontSize: 18, fontWeight: '700', color: Colors.textPrimary, marginTop: 12, marginBottom: 6,
+    fontSize: 18, fontFamily: Fonts.heading, color: Colors.textPrimary, marginTop: 12, marginBottom: 6,
   },
   emptyStateText: {
-    fontSize: 14, color: Colors.textSecond, textAlign: 'center', lineHeight: 20,
+    fontSize: 14, fontFamily: Fonts.body, color: Colors.textSecond, textAlign: 'center', lineHeight: 20,
   },
   starRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
   starBtn: { padding: 4 },
-  scoreLabel: { fontSize: 14, fontWeight: '700', color: '#d97706', marginBottom: 16 },
-  optional: { fontWeight: '400', color: Colors.textMuted },
+  scoreLabel: { fontSize: 14, fontFamily: Fonts.bodySemiBold, color: Colors.accent, marginBottom: 16 },
+  optional: { fontFamily: Fonts.body, color: Colors.textMuted },
   commentInput: {
-    backgroundColor: Colors.surface, borderRadius: 12, padding: 14,
+    backgroundColor: Colors.surface, borderRadius: Radius.container, padding: 14,
     borderWidth: 1, borderColor: Colors.border,
-    fontSize: 14, color: Colors.textPrimary, minHeight: 100, marginBottom: 4,
+    fontSize: 14, fontFamily: Fonts.body, color: Colors.textPrimary, minHeight: 100, marginBottom: 4,
   },
-  charCount: { fontSize: 12, color: Colors.textMuted, textAlign: 'right', marginBottom: 24 },
+  charCount: { fontSize: 12, fontFamily: Fonts.body, color: Colors.textMuted, textAlign: 'right', marginBottom: 24 },
   submitBtn: {
-    backgroundColor: Colors.brand, borderRadius: 12, padding: 16,
+    backgroundColor: Colors.accent, borderRadius: Radius.container, padding: 16,
     alignItems: 'center', marginTop: 8,
+    elevation: 4, shadowColor: Colors.shadow, shadowOpacity: 0.1, shadowRadius: 6, shadowOffset: { width: 0, height: 3 },
   },
   submitBtnDisabled: { opacity: 0.4 },
-  submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  successContainer: {
-    flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32,
-  },
+  submitText: { color: '#fff', fontSize: 16, fontFamily: Fonts.bodySemiBold },
+  successContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
   successIcon: { marginBottom: 16 },
-  successTitle: { fontSize: 24, fontWeight: '800', color: Colors.textPrimary, marginBottom: 8 },
+  successTitle: { fontSize: 24, fontFamily: Fonts.heading, color: Colors.textPrimary, marginBottom: 8 },
   successText: {
-    fontSize: 14, color: Colors.textSecond, textAlign: 'center', lineHeight: 20, marginBottom: 32,
+    fontSize: 14, fontFamily: Fonts.body, color: Colors.textSecond, textAlign: 'center', lineHeight: 20, marginBottom: 32,
   },
   rateAnotherBtn: {
-    backgroundColor: Colors.brand, borderRadius: 12, paddingHorizontal: 28, paddingVertical: 14,
+    backgroundColor: Colors.accent, borderRadius: Radius.container, paddingHorizontal: 28, paddingVertical: 14,
+    elevation: 4, shadowColor: Colors.shadow, shadowOpacity: 0.1, shadowRadius: 6, shadowOffset: { width: 0, height: 3 },
   },
-  rateAnotherText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  rateAnotherText: { color: '#fff', fontSize: 15, fontFamily: Fonts.bodySemiBold },
 });

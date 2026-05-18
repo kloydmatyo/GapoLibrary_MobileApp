@@ -7,7 +7,16 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getBook, getHistory, borrowBook } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
-import Colors from '@/constants/colors';
+import Colors, { Radius } from '@/constants/colors';
+import { Fonts } from '@/constants/typography';
+
+const cardShadow = {
+  elevation: 2 as const,
+  shadowColor: Colors.shadow,
+  shadowOpacity: 0.05,
+  shadowRadius: 4,
+  shadowOffset: { width: 0, height: 2 },
+};
 
 interface Book {
   _id: string;
@@ -114,7 +123,7 @@ export default function BorrowScreen() {
     return (
       <View style={styles.successContainer}>
         <View style={styles.successIcon}>
-          <Ionicons name="checkmark" size={40} color={Colors.brand} />
+          <Ionicons name="checkmark" size={40} color={Colors.accent} />
         </View>
         <Text style={styles.successTitle}>Borrow Request Submitted!</Text>
         <Text style={styles.successBody}>
@@ -136,7 +145,7 @@ export default function BorrowScreen() {
   if (loading || !book) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={Colors.brand} />
+        <ActivityIndicator size="large" color={Colors.accent} />
       </View>
     );
   }
@@ -159,14 +168,14 @@ export default function BorrowScreen() {
         {/* Book card */}
         <View style={styles.bookCard}>
           <View style={styles.bookIconWrap}>
-            <Ionicons name="book" size={28} color={Colors.brand} />
+            <Ionicons name="book" size={28} color={Colors.accent} />
           </View>
           <View style={styles.bookInfo}>
             <Text style={styles.bookTitle} numberOfLines={2}>{book.title}</Text>
             <Text style={styles.bookAuthor}>{book.author}</Text>
-            <View style={[styles.availBadge, { backgroundColor: isUnavailable ? Colors.errorBg : Colors.brandMuted }]}>
-              <View style={[styles.availDot, { backgroundColor: isUnavailable ? Colors.error : Colors.brand }]} />
-              <Text style={[styles.availText, { color: isUnavailable ? Colors.error : Colors.brand }]}>
+            <View style={[styles.availBadge, { backgroundColor: isUnavailable ? Colors.errorBg : Colors.accentMuted }]}>
+              <View style={[styles.availDot, { backgroundColor: isUnavailable ? Colors.error : Colors.accent }]} />
+              <Text style={[styles.availText, { color: isUnavailable ? Colors.error : Colors.accent }]}>
                 {isUnavailable ? 'Unavailable' : `${book.availableCopies} Available`}
               </Text>
             </View>
@@ -199,7 +208,7 @@ export default function BorrowScreen() {
         {/* Borrowing policy */}
         <View style={styles.policyCard}>
           <View style={styles.policyHeader}>
-            <Ionicons name="information-circle-outline" size={18} color={Colors.brand} />
+            <Ionicons name="information-circle-outline" size={18} color={Colors.accent} />
             <Text style={styles.policyTitle}>Borrowing Policy</Text>
           </View>
           {[
@@ -215,7 +224,7 @@ export default function BorrowScreen() {
         {/* Stats */}
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
-            <Text style={[styles.statValue, { color: Colors.brand }]}>{activeLoans}</Text>
+            <Text style={[styles.statValue, { color: Colors.accent }]}>{activeLoans}</Text>
             <Text style={styles.statLabel}>Currently Borrowed</Text>
           </View>
           <View style={styles.statCard}>
@@ -288,120 +297,120 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background },
 
-  // Header
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 16, paddingVertical: 12,
     backgroundColor: Colors.surface,
     borderBottomWidth: 1, borderBottomColor: Colors.border,
-    elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4,
+    ...cardShadow,
   },
   backBtn: { padding: 4 },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: Colors.textPrimary },
+  headerTitle: { fontSize: 20, fontFamily: Fonts.heading, color: Colors.textPrimary },
 
   content: { padding: 16, paddingBottom: 32 },
 
-  // Book card
   bookCard: {
     flexDirection: 'row', alignItems: 'center', gap: 14,
-    backgroundColor: Colors.surface, borderRadius: 16, padding: 16,
-    marginBottom: 16, elevation: 2,
-    shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6,
+    backgroundColor: Colors.surface, borderRadius: Radius.container, padding: 16,
+    marginBottom: 16, borderWidth: 1, borderColor: Colors.border, ...cardShadow,
   },
   bookIconWrap: {
     width: 56, height: 56, borderRadius: 28,
-    backgroundColor: Colors.brandMuted,
+    backgroundColor: Colors.accentMuted,
     justifyContent: 'center', alignItems: 'center',
   },
   bookInfo: { flex: 1 },
-  bookTitle: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary, marginBottom: 2 },
-  bookAuthor: { fontSize: 13, color: Colors.textSecond, marginBottom: 8 },
+  bookTitle: { fontSize: 16, fontFamily: Fonts.bodySemiBold, color: Colors.textPrimary, marginBottom: 2 },
+  bookAuthor: { fontSize: 13, fontFamily: Fonts.body, color: Colors.textSecond, marginBottom: 8 },
   availBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20,
+    alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: Radius.inner,
   },
   availDot: { width: 7, height: 7, borderRadius: 4 },
-  availText: { fontSize: 12, fontWeight: '700' },
+  availText: { fontSize: 12, fontFamily: Fonts.bodyBold },
 
-  // Patron section
   section: {
-    backgroundColor: Colors.surface, borderRadius: 16, padding: 16,
-    marginBottom: 16, elevation: 2,
-    shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6,
+    backgroundColor: Colors.surface, borderRadius: Radius.container, padding: 16,
+    marginBottom: 16, borderWidth: 1, borderColor: Colors.border, ...cardShadow,
   },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary, marginBottom: 14 },
+  sectionTitle: { fontSize: 16, fontFamily: Fonts.heading, color: Colors.textPrimary, marginBottom: 14 },
   fieldGroup: { marginBottom: 12 },
-  fieldLabel: { fontSize: 13, fontWeight: '600', color: Colors.textSecond, marginBottom: 6 },
+  fieldLabel: { fontSize: 13, fontFamily: Fonts.bodyMedium, color: Colors.textSecond, marginBottom: 6 },
   fieldReadOnly: {
-    backgroundColor: '#f3f4f6', borderRadius: 10, padding: 12,
+    backgroundColor: Colors.surfaceMuted, borderRadius: Radius.container, padding: 12,
     borderWidth: 1, borderColor: Colors.border,
   },
-  fieldValue: { fontSize: 14, color: Colors.textPrimary, fontWeight: '500' },
+  fieldValue: { fontSize: 14, fontFamily: Fonts.body, color: Colors.textPrimary },
   pickupNote: {
     flexDirection: 'row', gap: 8, alignItems: 'flex-start',
-    backgroundColor: '#eff6ff', borderRadius: 10, padding: 12, marginTop: 4,
+    backgroundColor: Colors.accentMuted, borderRadius: Radius.container, padding: 12, marginTop: 4,
   },
-  pickupNoteText: { flex: 1, fontSize: 13, color: '#1d4ed8', lineHeight: 18 },
+  pickupNoteText: { flex: 1, fontSize: 13, fontFamily: Fonts.body, color: Colors.accentDark, lineHeight: 18 },
 
-  // Policy
   policyCard: {
-    backgroundColor: Colors.brandMuted, borderRadius: 16, padding: 16,
-    marginBottom: 16,
+    backgroundColor: Colors.accentMuted, borderRadius: Radius.container, padding: 16,
+    marginBottom: 16, borderWidth: 1, borderColor: Colors.border,
   },
   policyHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
-  policyTitle: { fontSize: 13, fontWeight: '700', color: Colors.brandDark, textTransform: 'uppercase', letterSpacing: 0.5 },
-  policyItem: { fontSize: 13, color: Colors.brandDark, lineHeight: 22 },
+  policyTitle: {
+    fontSize: 13, fontFamily: Fonts.bodyBold, color: Colors.accentDark,
+    textTransform: 'uppercase', letterSpacing: 0.5,
+  },
+  policyItem: { fontSize: 13, fontFamily: Fonts.body, color: Colors.accentDark, lineHeight: 22 },
 
-  // Stats
   statsRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
   statCard: {
-    flex: 1, backgroundColor: Colors.surface, borderRadius: 16, padding: 16,
-    alignItems: 'center', elevation: 2,
-    shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6,
+    flex: 1, backgroundColor: Colors.surface, borderRadius: Radius.container, padding: 16,
+    alignItems: 'center', borderWidth: 1, borderColor: Colors.border, ...cardShadow,
   },
-  statValue: { fontSize: 36, fontWeight: '800' },
-  statLabel: { fontSize: 12, fontWeight: '600', color: Colors.textSecond, marginTop: 4, textAlign: 'center' },
+  statValue: { fontSize: 36, fontFamily: Fonts.heading },
+  statLabel: {
+    fontSize: 12, fontFamily: Fonts.bodyMedium, color: Colors.textSecond, marginTop: 4, textAlign: 'center',
+  },
 
-  // Blocking messages
   blockMsg: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 8,
-    borderRadius: 10, padding: 12, marginBottom: 10,
+    borderRadius: Radius.container, padding: 12, marginBottom: 10,
     backgroundColor: Colors.errorBg,
-    borderWidth: 1, borderColor: '#fecaca',
+    borderWidth: 1, borderColor: Colors.error,
   },
-  blockText: { flex: 1, fontSize: 13, lineHeight: 18 },
+  blockText: { flex: 1, fontSize: 13, fontFamily: Fonts.body, lineHeight: 18 },
 
-  // Actions
   actions: { flexDirection: 'row', gap: 12, marginTop: 8 },
   cancelBtn: {
-    flex: 1, paddingVertical: 14, borderRadius: 12,
+    flex: 1, paddingVertical: 14, borderRadius: Radius.container,
     borderWidth: 1, borderColor: Colors.border,
     alignItems: 'center', backgroundColor: Colors.surface,
   },
-  cancelBtnText: { fontSize: 15, fontWeight: '700', color: Colors.textPrimary },
+  cancelBtnText: { fontSize: 15, fontFamily: Fonts.bodySemiBold, color: Colors.textPrimary },
   confirmBtn: {
-    flex: 1, paddingVertical: 14, borderRadius: 12,
-    alignItems: 'center', backgroundColor: Colors.brand,
+    flex: 1, paddingVertical: 14, borderRadius: Radius.container,
+    alignItems: 'center', backgroundColor: Colors.accent,
+    elevation: 4, shadowColor: Colors.shadow, shadowOpacity: 0.1, shadowRadius: 6, shadowOffset: { width: 0, height: 3 },
   },
-  confirmBtnDisabled: { backgroundColor: Colors.textMuted },
-  confirmBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
+  confirmBtnDisabled: { backgroundColor: Colors.textMuted, elevation: 0 },
+  confirmBtnText: { fontSize: 15, fontFamily: Fonts.bodySemiBold, color: '#fff' },
 
-  // Success
   successContainer: {
     flex: 1, justifyContent: 'center', alignItems: 'center',
     padding: 32, backgroundColor: Colors.background,
   },
   successIcon: {
     width: 80, height: 80, borderRadius: 40,
-    backgroundColor: Colors.brandMuted,
+    backgroundColor: Colors.accentMuted,
     justifyContent: 'center', alignItems: 'center', marginBottom: 20,
   },
-  successTitle: { fontSize: 22, fontWeight: '800', color: Colors.textPrimary, textAlign: 'center', marginBottom: 12 },
-  successBody: { fontSize: 14, color: Colors.textSecond, textAlign: 'center', lineHeight: 22, marginBottom: 32 },
-  successHighlight: { fontWeight: '700', color: Colors.brand },
-  doneBtn: {
-    backgroundColor: Colors.brand, borderRadius: 12,
-    paddingVertical: 14, paddingHorizontal: 40,
+  successTitle: {
+    fontSize: 22, fontFamily: Fonts.heading, color: Colors.textPrimary, textAlign: 'center', marginBottom: 12,
   },
-  doneBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  successBody: {
+    fontSize: 14, fontFamily: Fonts.body, color: Colors.textSecond, textAlign: 'center', lineHeight: 22, marginBottom: 32,
+  },
+  successHighlight: { fontFamily: Fonts.bodySemiBold, color: Colors.accent },
+  doneBtn: {
+    backgroundColor: Colors.accent, borderRadius: Radius.container,
+    paddingVertical: 14, paddingHorizontal: 40,
+    elevation: 4, shadowColor: Colors.shadow, shadowOpacity: 0.1, shadowRadius: 6, shadowOffset: { width: 0, height: 3 },
+  },
+  doneBtnText: { color: '#fff', fontSize: 15, fontFamily: Fonts.bodySemiBold },
 });

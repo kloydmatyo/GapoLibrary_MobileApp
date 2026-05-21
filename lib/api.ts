@@ -127,3 +127,7 @@ export const submitRating = (staffId: string, score: number, transactionId: stri
 // --- Email Verification ---
 export const resendVerificationEmail = (email: string) =>
   api.post('/auth/resend-verification', { email });
+
+// --- Stories ---
+export const getStories = () =>
+  api.get('/stories');

@@ -99,9 +99,15 @@ export default function TabsLayout() {
         <Tabs.Screen
           name="profile"
           options={{
-            title: 'Profile',
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="stories"
+          options={{
+            title: 'Stories',
             tabBarIcon: ({ color, size, focused }) => (
-              <Ionicons name={focused ? "person" : "person-outline"} size={size} color={color} />
+              <Ionicons name={focused ? "play-circle" : "play-circle-outline"} size={size} color={color} />
             ),
           }}
         />

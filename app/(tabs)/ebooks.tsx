@@ -1,12 +1,14 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View, Text, FlatList, TextInput, TouchableOpacity,
-  StyleSheet, ActivityIndicator, Image, ScrollView,
+  StyleSheet, ActivityIndicator, ScrollView, Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getBooks } from '@/lib/api';
-import Colors from '@/constants/colors';
+import Colors, { Radius } from '@/constants/colors';
+import { Fonts } from '@/constants/typography';
+import { resolveCoverUri, openLibraryCoverByTitle } from '@/lib/covers';
 
 interface Ebook {
   _id: string;
@@ -14,10 +16,51 @@ interface Ebook {
   author: string;
   category: string;
   description?: string;
+  isbn?: string;
   ebookUrl?: string;
   coverImageUrl?: string;
   isEbook: boolean;
 }
+
+/** Small thumbnail — same size as catalog row covers. */
+function EbookCover({ coverImageUrl, isbn, title }: {
+  coverImageUrl?: string | null;
+  isbn?: string | null;
+  title: string;
+}) {
+  const initial = resolveCoverUri(coverImageUrl, isbn, title);
+  const [uri, setUri] = useState<string | null>(initial);
+  const [failed, setFailed] = useState(false);
+
+  if (!uri || failed) {
+    return <View style={coverStyles.empty} />;
+  }
+
+  return (
+    <Image
+      source={{ uri }}
+      style={coverStyles.image}
+      resizeMode="cover"
+      onError={() => {
+        const titleFallback = openLibraryCoverByTitle(title);
+        if (titleFallback && titleFallback !== uri) {
+          setUri(titleFallback);
+        } else {
+          setFailed(true);
+        }
+      }}
+    />
+  );
+}
+
+const coverStyles = StyleSheet.create({
+  image: { width: 48, height: 64, borderRadius: Radius.inner },
+  empty: {
+    width: 48, height: 64, borderRadius: Radius.inner,
+    backgroundColor: Colors.surfaceMuted,
+    borderWidth: 1, borderColor: Colors.border,
+  },
+});
 
 export default function EbooksScreen() {
   const router = useRouter();
@@ -26,177 +69,128 @@ export default function EbooksScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeCategory, setActiveCategory] = useState('All');
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const fetchEbooks = useCallback(async (q?: string) => {
+  const fetchEbooks = useCallback(async () => {
     try {
-      const res = await getBooks(q ? { search: q } : {});
-      const allBooks = res.data.books;
-      // Filter only eBooks
-      const ebooksOnly = allBooks.filter((book: Ebook) => book.isEbook);
+      const res = await getBooks({});
+      const ebooksOnly = (res.data.books as Ebook[]).filter((b) => b.isEbook);
       setEbooks(ebooksOnly);
-    } catch (error) {
-      console.error('Failed to fetch ebooks:', error);
+    } catch {
+      // silently fail
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   }, []);
 
-  // Extract unique categories
-  const categories = ['All', ...Array.from(new Set(ebooks.map((b) => b.category)))];
+  useEffect(() => { fetchEbooks(); }, []);
 
-  // Filter by category and search
-  const filteredEbooks = ebooks.filter((book) => {
-    const matchesCategory = activeCategory === 'All' || book.category === activeCategory;
-    const matchesSearch =
-      !search ||
-      book.title.toLowerCase().includes(search.toLowerCase()) ||
-      book.author.toLowerCase().includes(search.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
-
-  useEffect(() => {
-    fetchEbooks();
-  }, []);
-
-  const onSearch = () => {
-    setActiveCategory('All'); // Reset category when searching
-    fetchEbooks(search.trim() || undefined);
+  const handleSearchChange = (text: string) => {
+    setSearch(text);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setActiveCategory('All'), 300);
   };
 
-  const handleReadOnline = (item: Ebook) => {
-    if (!item.ebookUrl) {
-      return;
-    }
-    router.push(`/books/reader?id=${item._id}&title=${encodeURIComponent(item.title)}&url=${encodeURIComponent(item.ebookUrl)}` as any);
+  const categories = ['All', ...Array.from(new Set(ebooks.map((b) => b.category))).sort()];
+
+  const filtered = ebooks.filter((b) => {
+    const matchesSearch =
+      !search.trim() ||
+      b.title.toLowerCase().includes(search.toLowerCase()) ||
+      b.author.toLowerCase().includes(search.toLowerCase());
+    const matchesCategory = activeCategory === 'All' || b.category === activeCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  const handleOpen = (item: Ebook) => {
+    if (!item.ebookUrl) return;
+    router.push(
+      `/books/reader?id=${item._id}&title=${encodeURIComponent(item.title)}&url=${encodeURIComponent(item.ebookUrl)}` as any,
+    );
   };
 
   const renderItem = ({ item }: { item: Ebook }) => (
-    <View style={styles.card}>
-      {/* Cover */}
-      <View style={styles.coverContainer}>
-        {item.coverImageUrl ? (
-          <Image source={{ uri: item.coverImageUrl }} style={styles.coverImage} />
-        ) : (
-          <View style={styles.coverPlaceholder}>
-            <Ionicons name="book" size={40} color={Colors.brand} />
-          </View>
-        )}
-        <View style={styles.ebookBadge}>
-          <Text style={styles.ebookBadgeText}>eBook</Text>
-        </View>
-      </View>
-
-      {/* Info */}
-      <View style={styles.infoContainer}>
-        <Text style={styles.category}>{item.category}</Text>
+    <TouchableOpacity
+      style={styles.item}
+      onPress={() => handleOpen(item)}
+      activeOpacity={0.75}
+    >
+      <EbookCover
+        coverImageUrl={item.coverImageUrl}
+        isbn={item.isbn}
+        title={item.title}
+      />
+      <View style={styles.info}>
         <Text style={styles.title} numberOfLines={2}>{item.title}</Text>
-        <Text style={styles.author}>{item.author}</Text>
-        
-        {item.description && (
-          <Text style={styles.description} numberOfLines={2}>
-            {item.description}
-          </Text>
-        )}
-
-        {/* Actions */}
-        <View style={styles.actions}>
-          <TouchableOpacity
-            style={styles.readButton}
-            onPress={() => handleReadOnline(item)}
-          >
-            <Ionicons name="open-outline" size={18} color="#fff" />
-            <Text style={styles.readButtonText}>Read Online</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={styles.detailsButton}
-            onPress={() => router.push(`/books/${item._id}` as any)}
-          >
-            <Text style={styles.detailsButtonText}>Details</Text>
-          </TouchableOpacity>
+        <Text style={styles.author} numberOfLines={1}>{item.author}</Text>
+        <View style={styles.row}>
+          <Text style={styles.category}>{item.category}</Text>
+          <Text style={styles.readLabel}>Read Online</Text>
         </View>
       </View>
-    </View>
+      <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
+    </TouchableOpacity>
   );
 
   return (
     <View style={styles.container}>
-      {/* Info Banner */}
-      <View style={styles.banner}>
-        <Ionicons name="information-circle" size={20} color={Colors.brand} />
-        <Text style={styles.bannerText}>Read online — no borrowing needed</Text>
-      </View>
-
       {/* Search */}
-      <View style={styles.searchRow}>
+      <View style={styles.searchWrap}>
+        <Ionicons name="search-outline" size={18} color={Colors.textMuted} style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search eBooks..."
+          placeholder="Search title or author..."
+          placeholderTextColor={Colors.textMuted}
           value={search}
-          onChangeText={setSearch}
-          onSubmitEditing={onSearch}
+          onChangeText={handleSearchChange}
           returnKeyType="search"
+          clearButtonMode="while-editing"
         />
-        <TouchableOpacity style={styles.searchBtn} onPress={onSearch}>
-          <Ionicons name="search" size={20} color="#fff" />
-        </TouchableOpacity>
+        {search.length > 0 && (
+          <TouchableOpacity onPress={() => setSearch('')}>
+            <Ionicons name="close-circle" size={18} color={Colors.textMuted} />
+          </TouchableOpacity>
+        )}
       </View>
 
-      {/* Count */}
-      {!loading && (
-        <View style={styles.countContainer}>
-          <Ionicons name="book-outline" size={18} color={Colors.brand} />
-          <Text style={styles.countText}>
-            {filteredEbooks.length} {filteredEbooks.length === 1 ? 'eBook' : 'eBooks'} available
-          </Text>
-        </View>
-      )}
-
-      {/* Category Filter */}
+      {/* Category chips */}
       {!loading && categories.length > 1 && (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          style={styles.categoryScrollView}
-          contentContainerStyle={styles.categoryScroll}
+          style={styles.chipsScrollView}
+          contentContainerStyle={styles.chips}
         >
-          {categories.map((cat) => {
-            const isActive = activeCategory === cat;
-            return (
-              <TouchableOpacity
-                key={cat}
-                style={[styles.categoryChip, isActive && styles.categoryChipActive]}
-                onPress={() => setActiveCategory(cat)}
-              >
-                <Text style={[styles.categoryChipText, isActive && styles.categoryChipTextActive]}>
-                  {cat}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+          {categories.map((cat) => (
+            <TouchableOpacity
+              key={cat}
+              style={[styles.chip, activeCategory === cat && styles.chipActive]}
+              onPress={() => setActiveCategory(cat)}
+            >
+              <Text style={[styles.chipText, activeCategory === cat && styles.chipTextActive]}>
+                {cat}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </ScrollView>
       )}
 
       {/* List */}
       {loading ? (
-        <ActivityIndicator style={{ marginTop: 40 }} size="large" color={Colors.brand} />
+        <ActivityIndicator style={{ marginTop: 40 }} size="large" color={Colors.accent} />
       ) : (
         <FlatList
-          data={filteredEbooks}
-          keyExtractor={(item) => item._id}
+          data={filtered}
+          keyExtractor={(b) => b._id}
           renderItem={renderItem}
           contentContainerStyle={styles.list}
-          onRefresh={() => {
-            setRefreshing(true);
-            fetchEbooks(search || undefined);
-          }}
+          onRefresh={() => { setRefreshing(true); fetchEbooks(); }}
           refreshing={refreshing}
           ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Ionicons name="book-outline" size={64} color={Colors.textMuted} />
+            <View style={styles.emptyFull}>
               <Text style={styles.emptyTitle}>No eBooks found</Text>
-              <Text style={styles.emptyText}>Try a different search or category</Text>
+              <Text style={styles.emptyBody}>Try a different title, author, or category.</Text>
             </View>
           }
         />
@@ -207,66 +201,109 @@ export default function EbooksScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  banner: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: Colors.brandMuted, paddingHorizontal: 16, paddingVertical: 12,
-    marginHorizontal: 16, marginTop: 16, borderRadius: 16,
+
+  searchWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    margin: 16,
+    marginBottom: 8,
+    paddingHorizontal: 14,
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.container,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    gap: 8,
   },
-  bannerText: { flex: 1, fontSize: 14, fontWeight: '700', color: Colors.brandDark },
-  searchRow: { flexDirection: 'row', padding: 16, gap: 8 },
+  searchIcon: { marginRight: 2 },
   searchInput: {
-    flex: 1, backgroundColor: Colors.surface, borderRadius: 16, padding: 12,
-    borderWidth: 1, borderColor: Colors.border, fontSize: 14, fontWeight: '500',
-    elevation: 3, shadowColor: Colors.shadow, shadowOpacity: 0.07, shadowRadius: 6,
+    flex: 1,
+    paddingVertical: 12,
+    fontSize: 14,
+    fontFamily: Fonts.body,
+    color: Colors.textPrimary,
   },
-  searchBtn: {
-    backgroundColor: Colors.brandDarker, borderRadius: 16, padding: 12,
+
+  chipsScrollView: { flexGrow: 0, flexShrink: 0 },
+  chips: { paddingHorizontal: 16, paddingBottom: 12, gap: 8, alignItems: 'center' },
+  chip: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: Radius.container,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    height: 34,
     justifyContent: 'center',
-    elevation: 4, shadowColor: '#2e7d32', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 },
   },
-  countContainer: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingBottom: 8 },
-  countText: { fontSize: 14, fontWeight: '800', color: Colors.textPrimary },
-  categoryScrollView: { flexGrow: 0, flexShrink: 0 },
-  categoryScroll: { paddingHorizontal: 16, paddingBottom: 12, gap: 8, alignItems: 'center' },
-  categoryChip: {
-    paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
-    borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface,
-    height: 34, justifyContent: 'center',
+  chipActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
+  chipText: {
+    fontSize: 13,
+    fontFamily: Fonts.bodySemiBold,
+    color: Colors.textSecond,
   },
-  categoryChipActive: { backgroundColor: Colors.brand, borderColor: Colors.brand },
-  categoryChipText: { fontSize: 13, fontWeight: '700', color: Colors.textPrimary },
-  categoryChipTextActive: { color: '#fff' },
+  chipTextActive: { color: '#fff' },
+
   list: { paddingHorizontal: 16, paddingBottom: 20 },
-  card: {
-    backgroundColor: Colors.surface, borderRadius: 20, marginBottom: 16, overflow: 'hidden',
-    elevation: 5, shadowColor: Colors.shadow, shadowOpacity: 0.10, shadowRadius: 10, shadowOffset: { width: 0, height: 5 },
+
+  item: {
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.container,
+    padding: 12,
+    marginBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderLeftWidth: 4,
+    borderLeftColor: Colors.accent,
   },
-  coverContainer: { position: 'relative', height: 180, backgroundColor: Colors.brandLight, justifyContent: 'center', alignItems: 'center' },
-  coverImage: { width: '100%', height: '100%' },
-  coverPlaceholder: { width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' },
-  ebookBadge: {
-    position: 'absolute', top: 12, left: 12,
-    backgroundColor: Colors.brandDarker, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20,
+  info: { flex: 1 },
+  title: {
+    fontSize: 14,
+    fontFamily: Fonts.bodySemiBold,
+    color: Colors.textPrimary,
+    marginBottom: 2,
   },
-  ebookBadgeText: { color: '#fff', fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
-  infoContainer: { padding: 16 },
-  category: { fontSize: 11, fontWeight: '800', color: Colors.brand, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6 },
-  title: { fontSize: 16, fontWeight: '800', color: Colors.textPrimary, marginBottom: 4 },
-  author: { fontSize: 14, fontWeight: '700', color: Colors.textSecond, marginBottom: 8 },
-  description: { fontSize: 13, color: Colors.textSecond, lineHeight: 18, marginBottom: 12 },
-  actions: { flexDirection: 'row', gap: 8 },
-  readButton: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-    backgroundColor: Colors.brandDarker, paddingVertical: 13, borderRadius: 14,
-    elevation: 4, shadowColor: '#2e7d32', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 },
+  author: {
+    fontSize: 12,
+    fontFamily: Fonts.body,
+    color: Colors.textSecond,
+    marginBottom: 6,
   },
-  readButtonText: { color: '#fff', fontSize: 14, fontWeight: '800' },
-  detailsButton: {
-    paddingHorizontal: 16, paddingVertical: 13, borderRadius: 14,
-    borderWidth: 1, borderColor: Colors.border, justifyContent: 'center',
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  detailsButtonText: { color: Colors.textPrimary, fontSize: 14, fontWeight: '700' },
-  emptyContainer: { alignItems: 'center', paddingVertical: 60 },
-  emptyTitle: { fontSize: 18, fontWeight: '800', color: Colors.textPrimary, marginTop: 16, marginBottom: 8 },
-  emptyText: { fontSize: 14, color: Colors.textMuted, fontWeight: '600' },
+  category: {
+    fontSize: 11,
+    fontFamily: Fonts.bodyMedium,
+    color: Colors.textMuted,
+    backgroundColor: Colors.surfaceMuted,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: Radius.inner,
+  },
+  readLabel: {
+    fontSize: 11,
+    fontFamily: Fonts.bodySemiBold,
+    color: Colors.accent,
+  },
+
+  emptyFull: { flex: 1, justifyContent: 'center', paddingHorizontal: 32, paddingTop: 60 },
+  emptyTitle: {
+    fontSize: 18,
+    fontFamily: Fonts.heading,
+    color: Colors.textPrimary,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  emptyBody: {
+    fontSize: 14,
+    fontFamily: Fonts.body,
+    color: Colors.textSecond,
+    textAlign: 'center',
+    lineHeight: 21,
+  },
 });

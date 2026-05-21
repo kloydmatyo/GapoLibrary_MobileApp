@@ -61,7 +61,7 @@ export default function RateScreen() {
       ]);
 
       const history = historyRes.data.history || [];
-      const ratedTransactionIds = new Set(ratingsRes.data.ratedTransactionIds || []);
+      const ratedTransactionIds = new Set<string>((ratingsRes.data.ratedTransactionIds || []).map(String));
 
       const ratableTransactions: RatableTransaction[] = [];
 
@@ -70,7 +70,7 @@ export default function RateScreen() {
         if (!isCompleted) return;
 
         if (tx.pickupConfirmedBy) {
-          const alreadyRated = ratedTransactionIds.has(tx._id);
+          const alreadyRated = ratedTransactionIds.has(String(tx._id));
           ratableTransactions.push({
             ...tx,
             staffId: tx.pickupConfirmedBy,
@@ -82,7 +82,7 @@ export default function RateScreen() {
         }
 
         if (tx.checkedInBy && tx.checkedInBy !== tx.pickupConfirmedBy) {
-          const alreadyRated = ratedTransactionIds.has(tx._id);
+          const alreadyRated = ratedTransactionIds.has(String(tx._id));
           ratableTransactions.push({
             ...tx,
             staffId: tx.checkedInBy,

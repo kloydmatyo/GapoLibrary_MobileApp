@@ -4,6 +4,7 @@ export type LoanDisplayStatus =
   | 'overdue'
   | 'active'
   | 'pending_pickup'
+  | 'pending_renewal'
   | 'returned'
   | 'expired';
 
@@ -14,6 +15,7 @@ export function normalizeLoanStatus(
   if (status === 'returned') return 'returned';
   if (status === 'expired') return 'expired';
   if (status === 'pending_pickup') return 'pending_pickup';
+  if (status === 'pending_renewal') return 'pending_renewal';
   if (status === 'overdue') return 'overdue';
   if (status === 'active' && dueDate && new Date(dueDate) < new Date()) {
     return 'overdue';
@@ -29,6 +31,8 @@ export function statusBorderColor(status: LoanDisplayStatus): string {
     case 'active':
     case 'pending_pickup':
       return Colors.accent;
+    case 'pending_renewal':
+      return '#9333ea'; // purple
     case 'returned':
     case 'expired':
       return Colors.statusReturned;

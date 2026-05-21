@@ -73,6 +73,9 @@ export const getHistory = (userId?: string) =>
 export const borrowBook = (bookId: string) =>
   api.post('/circulation/checkout', { bookId });
 
+export const renewLoan = (circulationId: string) =>
+  api.post('/circulation/renew', { circulationId });
+
 // --- Reservations ---
 export const createReservation = (bookId: string) =>
   api.post('/reservations', { bookId });

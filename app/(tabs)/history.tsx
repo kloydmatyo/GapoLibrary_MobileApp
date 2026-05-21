@@ -1,10 +1,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, FlatList, StyleSheet, ActivityIndicator,
-  RefreshControl, ScrollView, TouchableOpacity,
+  RefreshControl, ScrollView, TouchableOpacity, Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { getHistory, getBooks } from '@/lib/api';
+import { getHistory, getBooks, renewLoan } from '@/lib/api';
 import Colors, { Radius } from '@/constants/colors';
 import { Fonts } from '@/constants/typography';
 import { useOverdue } from '@/context/OverdueContext';
@@ -19,11 +19,13 @@ interface HistoryItem {
   checkoutDate: string;
   dueDate: string;
   returnDate?: string;
-  status: 'pending_pickup' | 'active' | 'returned' | 'overdue' | 'expired';
+  status: 'pending_pickup' | 'active' | 'returned' | 'overdue' | 'expired' | 'pending_renewal';
   confirmedBy?: string | null;
   returnedTo?: string | null;
   isbn?: string;
   coverImageUrl?: string;
+  renewalCount?: number;
+  renewedAt?: string | null;
 }
 
 const STATUS_LABELS: Record<LoanDisplayStatus, string> = {
@@ -32,14 +34,16 @@ const STATUS_LABELS: Record<LoanDisplayStatus, string> = {
   returned: 'Returned',
   overdue: 'Overdue',
   expired: 'Expired',
+  pending_renewal: 'Renewal Pending',
 };
 
-type FilterKey = 'all' | HistoryItem['status'];
+type FilterKey = 'all' | LoanDisplayStatus;
 
 const FILTERS: { key: FilterKey; label: string }[] = [
   { key: 'all', label: 'All' },
   { key: 'pending_pickup', label: 'Awaiting Pickup' },
   { key: 'active', label: 'Borrowed' },
+  { key: 'pending_renewal', label: 'Renewal Pending' },
   { key: 'overdue', label: 'Overdue' },
   { key: 'returned', label: 'Returned' },
 ];
@@ -50,6 +54,7 @@ export default function HistoryScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [overdueCount, setOverdueCount] = useState(0);
   const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
+  const [renewingId, setRenewingId] = useState<string | null>(null);
   const { setOverdueCount: setGlobalOverdueCount } = useOverdue();
 
   const fetchHistory = useCallback(async () => {
@@ -64,7 +69,10 @@ export default function HistoryScreen() {
       );
 
       const normalised = historyData.map((item) => {
-        const displayStatus = normalizeLoanStatus(item.status, item.dueDate);
+        // Don't normalize pending_renewal — keep it as-is
+        const displayStatus = item.status === 'pending_renewal'
+          ? 'pending_renewal'
+          : normalizeLoanStatus(item.status, item.dueDate);
         const meta = item.bookId ? bookMeta.get(item.bookId) : undefined;
         return {
           ...item,
@@ -95,6 +103,40 @@ export default function HistoryScreen() {
     fetchHistory();
   };
 
+  const handleRenew = async (item: HistoryItem) => {
+    Alert.alert(
+      'Request Renewal',
+      `Request a renewal for "${item.bookTitle}"? The librarian will need to confirm it.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Request',
+          onPress: async () => {
+            setRenewingId(item._id);
+            try {
+              await renewLoan(item._id);
+              // Optimistically update status locally
+              setHistory((prev) =>
+                prev.map((h) =>
+                  h._id === item._id ? { ...h, status: 'pending_renewal' } : h
+                )
+              );
+              Alert.alert(
+                'Renewal Requested',
+                'Your renewal request has been submitted. You\'ll be notified once the librarian confirms it.'
+              );
+            } catch (err: any) {
+              const msg = err?.response?.data?.error || 'Something went wrong. Please try again.';
+              Alert.alert('Cannot Renew', msg);
+            } finally {
+              setRenewingId(null);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const filteredHistory = activeFilter === 'all'
     ? history
     : history.filter((h) => h.status === activeFilter);
@@ -105,16 +147,31 @@ export default function HistoryScreen() {
   const fmt = (d: string) =>
     new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
 
+  const getDaysLeft = (dueDate: string) => {
+    return Math.ceil((new Date(dueDate).getTime() - Date.now()) / 86_400_000);
+  };
+
   const getDaysOverdue = (dueDate: string) => {
     const diff = Math.floor((Date.now() - new Date(dueDate).getTime()) / 86_400_000);
     return diff > 0 ? diff : 0;
   };
 
+  const canRenew = (item: HistoryItem): boolean => {
+    if (item.status !== 'active') return false;
+    if ((item.renewalCount ?? 0) >= 1) return false;
+    const daysLeft = getDaysLeft(item.dueDate);
+    return daysLeft >= 1 && daysLeft <= 2;
+  };
+
   const renderItem = ({ item }: { item: HistoryItem }) => {
-    const displayStatus = normalizeLoanStatus(item.status, item.dueDate);
+    const displayStatus = item.status as LoanDisplayStatus;
     const isOverdue = displayStatus === 'overdue';
+    const isPendingRenewal = displayStatus === 'pending_renewal';
     const daysOverdue = isOverdue ? getDaysOverdue(item.dueDate) : 0;
+    const daysLeft = !isOverdue && item.status === 'active' ? getDaysLeft(item.dueDate) : null;
     const borderColor = statusBorderColor(displayStatus);
+    const showRenewButton = canRenew(item);
+    const isRenewing = renewingId === item._id;
 
     return (
       <View style={[styles.item, { borderLeftColor: borderColor }]}>
@@ -132,6 +189,14 @@ export default function HistoryScreen() {
             Due: {fmt(item.dueDate)}
             {isOverdue && ` (${daysOverdue} day${daysOverdue > 1 ? 's' : ''} overdue)`}
           </Text>
+          {daysLeft !== null && daysLeft >= 0 && (
+            <Text style={[
+              styles.date,
+              daysLeft <= 2 ? styles.urgentDate : null,
+            ]}>
+              {daysLeft === 0 ? 'Due today' : daysLeft === 1 ? '1 day left' : `${daysLeft} days left`}
+            </Text>
+          )}
           {item.returnDate && <Text style={styles.date}>Returned: {fmt(item.returnDate)}</Text>}
           {item.confirmedBy && (
             <Text style={styles.staffInfo}>
@@ -145,16 +210,50 @@ export default function HistoryScreen() {
               {item.returnedTo}
             </Text>
           )}
+          {(item.renewalCount ?? 0) >= 1 && item.renewedAt && (
+            <Text style={styles.renewedInfo}>
+              Renewed on {fmt(item.renewedAt)}
+            </Text>
+          )}
+
+          {/* Renew button — only within 1–2 days of due date */}
+          {showRenewButton && (
+            <TouchableOpacity
+              style={[styles.renewBtn, isRenewing && styles.renewBtnDisabled]}
+              onPress={() => handleRenew(item)}
+              disabled={isRenewing}
+              activeOpacity={0.75}
+            >
+              {isRenewing ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <>
+                  <Ionicons name="refresh" size={13} color="#fff" />
+                  <Text style={styles.renewBtnText}>Request Renewal</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
+
+          {/* Pending renewal indicator */}
+          {isPendingRenewal && (
+            <View style={styles.pendingRenewalBadge}>
+              <Ionicons name="time-outline" size={12} color="#9333ea" />
+              <Text style={styles.pendingRenewalText}>Awaiting librarian approval</Text>
+            </View>
+          )}
         </View>
+
         <View style={styles.badge}>
           <Text
             style={[
               styles.badgeText,
               isOverdue && styles.badgeTextOverdue,
+              isPendingRenewal && styles.badgeTextPendingRenewal,
               displayStatus === 'returned' && styles.badgeTextMuted,
             ]}
           >
-            {STATUS_LABELS[displayStatus]}
+            {STATUS_LABELS[displayStatus] ?? displayStatus}
           </Text>
         </View>
       </View>
@@ -338,6 +437,7 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
   },
   overdueDate: { color: Colors.error, fontFamily: Fonts.bodySemiBold },
+  urgentDate: { color: '#d97706', fontFamily: Fonts.bodySemiBold },
   staffInfo: {
     fontSize: 11,
     fontFamily: Fonts.body,
@@ -345,6 +445,43 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   staffLabel: { fontFamily: Fonts.bodySemiBold, color: Colors.textSecond },
+  renewedInfo: {
+    fontSize: 11,
+    fontFamily: Fonts.body,
+    color: Colors.textMuted,
+    marginTop: 2,
+    fontStyle: 'italic',
+  },
+  renewBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    backgroundColor: Colors.accent,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: Radius.inner,
+  },
+  renewBtnDisabled: {
+    opacity: 0.6,
+  },
+  renewBtnText: {
+    fontSize: 11,
+    fontFamily: Fonts.bodyBold,
+    color: '#fff',
+  },
+  pendingRenewalBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 6,
+  },
+  pendingRenewalText: {
+    fontSize: 11,
+    fontFamily: Fonts.bodySemiBold,
+    color: '#9333ea',
+  },
   badge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -360,6 +497,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   badgeTextOverdue: { color: Colors.error },
+  badgeTextPendingRenewal: { color: '#9333ea' },
   badgeTextMuted: { color: Colors.statusReturned },
   emptyFull: {
     flex: 1,

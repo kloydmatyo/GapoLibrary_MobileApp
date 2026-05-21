@@ -110,9 +110,11 @@ export default function CustomHeader() {
     <View style={styles.container}>
       {/* Left: Logo */}
       <View style={styles.leftSection}>
-        <View style={styles.logoWrap}>
-          <Ionicons name="book" size={24} color={Colors.brand} />
-        </View>
+        <Image
+          source={require('../OCPL_LOGO.jpg')}
+          style={styles.logoImg}
+          resizeMode="contain"
+        />
         <View>
           <Text style={styles.title}>GapoLibrary</Text>
           <Text style={styles.subtitle}>Olongapo City</Text>
@@ -239,7 +241,7 @@ const styles = StyleSheet.create({
     elevation: 4, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 },
   },
   leftSection: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  logoWrap: { width: 40, height: 40, borderRadius: 8, backgroundColor: Colors.accentMuted, justifyContent: 'center', alignItems: 'center' },
+  logoImg: { width: 40, height: 40, borderRadius: 8 },
   title: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary },
   subtitle: { fontSize: 11, color: Colors.textMuted },
   rightSection: { flexDirection: 'row', alignItems: 'center', gap: 16 },

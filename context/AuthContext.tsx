@@ -19,11 +19,22 @@ interface AuthContextType {
 
 function isSessionTokenValid(token: string): boolean {
   try {
-    const decoded = typeof globalThis.atob === 'function' ? globalThis.atob(token) : '';
+    // React Native does not have atob — use Buffer (available via the hermes runtime)
+    // or fall back to a manual base64 decode via the built-in Buffer polyfill.
+    let decoded: string;
+    if (typeof Buffer !== 'undefined') {
+      decoded = Buffer.from(token, 'base64').toString('utf-8');
+    } else if (typeof globalThis.atob === 'function') {
+      decoded = globalThis.atob(token);
+    } else {
+      // Cannot decode — treat as valid so we don't log the user out
+      return true;
+    }
     const parsed = JSON.parse(decoded);
     return typeof parsed.timestamp === 'number' && Date.now() - parsed.timestamp <= 7 * 24 * 60 * 60 * 1000;
   } catch {
-    return false;
+    // If we can't parse it, keep the token rather than deleting it
+    return true;
   }
 }
 

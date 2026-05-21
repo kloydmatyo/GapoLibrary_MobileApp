@@ -17,10 +17,9 @@ export const clearTokenCache = () => {
 };
 
 async function getSessionToken() {
-  if (sessionTokenCache !== null) {
+  if (sessionTokenCache !== null && sessionTokenCache !== '') {
     return sessionTokenCache;
   }
-
   sessionTokenCache = await SecureStore.getItemAsync('session_token');
   return sessionTokenCache;
 }

@@ -27,7 +27,13 @@ export default function ReaderScreen() {
   const [error, setError] = useState(false);
 
   const title = params.title ? decodeURIComponent(params.title) : 'eBook Reader';
-  const url = params.url ? decodeURIComponent(params.url) : null;
+  const rawUrl = params.url ? decodeURIComponent(params.url) : null;
+
+  // Android WebView cannot render PDFs natively — it just downloads them.
+  // Wrap the URL in Google Docs Viewer so it renders inline on all platforms.
+  const url = rawUrl
+    ? `https://docs.google.com/viewer?embedded=true&url=${encodeURIComponent(rawUrl)}`
+    : null;
 
   const handleRetry = () => {
     setError(false);
@@ -109,6 +115,9 @@ export default function ReaderScreen() {
         onError={handleWebViewError}
         startInLoadingState={false}
         scalesPageToFit
+        javaScriptEnabled
+        domStorageEnabled
+        allowsInlineMediaPlayback
       />
     </View>
   );

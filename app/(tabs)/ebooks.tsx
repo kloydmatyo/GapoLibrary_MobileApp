@@ -104,10 +104,7 @@ export default function EbooksScreen() {
   });
 
   const handleOpen = (item: Ebook) => {
-    if (!item.ebookUrl) return;
-    router.push(
-      `/books/reader?id=${item._id}&title=${encodeURIComponent(item.title)}&url=${encodeURIComponent(item.ebookUrl)}` as any,
-    );
+    router.push(`/books/reader?id=${item._id}&title=${encodeURIComponent(item.title)}` as any);
   };
 
   const renderItem = ({ item }: { item: Ebook }) => (

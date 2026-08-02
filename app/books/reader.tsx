@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { WebView, type WebViewErrorEvent } from 'react-native-webview';
 import Colors, { Radius } from '@/constants/colors';
 import { Fonts } from '@/constants/typography';
+import { BASE_URL } from '@/lib/api';
 
 const cardShadow = {
   elevation: 2 as const,
@@ -20,19 +21,18 @@ export default function ReaderScreen() {
   const params = useLocalSearchParams<{
     id?: string;
     title?: string;
-    url?: string;
   }>();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
   const title = params.title ? decodeURIComponent(params.title) : 'eBook Reader';
-  const rawUrl = params.url ? decodeURIComponent(params.url) : null;
 
   // Android WebView cannot render PDFs natively — it just downloads them.
   // Wrap the URL in Google Docs Viewer so it renders inline on all platforms.
-  const url = rawUrl
-    ? `https://docs.google.com/viewer?embedded=true&url=${encodeURIComponent(rawUrl)}`
+  const proxyUrl = params.id ? `${BASE_URL}/ebooks/${params.id}/view` : null;
+  const url = proxyUrl
+    ? `https://docs.google.com/viewer?embedded=true&url=${encodeURIComponent(proxyUrl)}`
     : null;
 
   const handleRetry = () => {
@@ -79,6 +79,11 @@ export default function ReaderScreen() {
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>{title}</Text>
         <View style={styles.backButton} />
+      </View>
+
+      <View style={styles.noticeRow}>
+        <Ionicons name="lock-closed-outline" size={16} color={Colors.textSecond} />
+        <Text style={styles.noticeText}>This eBook is for viewing only. Downloads are not permitted.</Text>
       </View>
 
       {/* Error State */}
@@ -148,7 +153,7 @@ const styles = StyleSheet.create({
   },
   loadingOverlay: {
     position: 'absolute',
-    top: 57,
+    top: 106,
     left: 0,
     right: 0,
     bottom: 0,
@@ -165,7 +170,7 @@ const styles = StyleSheet.create({
   },
   errorOverlay: {
     position: 'absolute',
-    top: 57,
+    top: 106,
     left: 0,
     right: 0,
     bottom: 0,
@@ -221,5 +226,22 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontFamily: Fonts.bodySemiBold,
     fontSize: 16,
+  },
+  noticeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: Colors.surfaceMuted,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  noticeText: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: Fonts.body,
+    color: Colors.textSecond,
+    lineHeight: 18,
   },
 });

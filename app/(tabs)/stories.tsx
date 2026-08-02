@@ -75,7 +75,7 @@ function VideoModal({
         </style>
       </head>
       <body>
-        <video src="${videoUrl}" controls autoplay playsinline></video>
+        <video src="${videoUrl}" controls controlsList="nodownload" oncontextmenu="return false" autoplay playsinline></video>
       </body>
     </html>
   `;

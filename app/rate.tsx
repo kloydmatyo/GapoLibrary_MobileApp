@@ -257,8 +257,6 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: 14, fontFamily: Fonts.body, color: Colors.textSecond, textAlign: 'center', lineHeight: 20,
   },
-  starRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
-  starBtn: { padding: 4 },
   scoreLabel: { fontSize: 14, fontFamily: Fonts.bodySemiBold, color: Colors.accent, marginBottom: 16 },
   optional: { fontFamily: Fonts.body, color: Colors.textMuted },
   commentInput: {

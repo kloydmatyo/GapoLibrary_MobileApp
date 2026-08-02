@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import StarRow, { SCORE_LABELS } from '@/components/StarRow';
+import ReactionRow, { SCORE_LABELS } from '@/components/StarRow';
 import { submitRating } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import Colors, { Radius } from '@/constants/colors';
@@ -70,13 +70,14 @@ export default function RatingScreen() {
   };
 
   const handleSubmit = async () => {
-    if (score === 0) {
-      Alert.alert('Incomplete', 'Please select a star rating.');
+    const normalizedScore = score >= 1 && score <= 3 ? score : 0;
+    if (normalizedScore === 0) {
+      Alert.alert('Incomplete', 'Please select a reaction.');
       return;
     }
     setSubmitting(true);
     try {
-      await submitRating(transaction.staffId, score, transaction._id, comment.trim() || undefined);
+      await submitRating(transaction.staffId, normalizedScore, transaction._id, comment.trim() || undefined);
       setSubmitted(true);
     } catch (err: any) {
       Alert.alert('Error', err?.response?.data?.error || 'Failed to submit rating.');
@@ -132,7 +133,7 @@ export default function RatingScreen() {
         </View>
 
         <Text style={styles.sectionLabel}>Your rating</Text>
-        <StarRow value={score} onChange={setScore} />
+  <ReactionRow value={score} onChange={setScore} />
         {score > 0 && <Text style={styles.scoreLabel}>{SCORE_LABELS[score]}</Text>}
 
         <Text style={styles.sectionLabel}>

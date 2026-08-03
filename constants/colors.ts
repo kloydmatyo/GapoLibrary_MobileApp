@@ -12,16 +12,16 @@ const Colors = {
   textMuted: '#A8A29E',
 
   // Brand / accent (knowledge — deep teal)
-  accent: '#0D6E6E',
-  accentMuted: '#E6F2F2',
-  accentDark: '#0A5555',
+  accent: '#3FA36C',
+  accentMuted: '#3FA36C1A',
+  accentDark: '#0a5a5a',
 
   // Semantic aliases (backward-compatible)
-  brand: '#0D6E6E',
-  brandDarker: '#0A5555',
-  brandLight: '#E6F2F2',
-  brandMuted: '#E6F2F2',
-  brandDark: '#0A5555',
+  brand: '#3FA36C',
+  brandDarker: '#0a5a5a',
+  brandLight: '#3FA36C1A',
+  brandMuted: '#3FA36C1A',
+  brandDark: '#0a5a5a',
 
   // Status — red reserved for overdue / critical
   error: '#B91C1C',
@@ -30,18 +30,18 @@ const Colors = {
   statusReturnedBg: '#F5F5F4',
 
   // Legacy keys (mapped to new palette; avoid green/orange in UI)
-  success: '#0D6E6E',
+  success: '#3FA36C',
   warning: '#57534E',
   warningBg: '#EFEBE4',
 
   primary: {
-    50: '#E6F2F2',
+    50: '#3FA36C1A',
     100: '#CCE5E5',
     200: '#99CCCC',
     300: '#66B2B2',
     400: '#339999',
-    500: '#0D6E6E',
-    600: '#0A5555',
+    500: '#3FA36C',
+    600: '#0a5a5a',
     700: '#084444',
     800: '#063333',
     900: '#042222',

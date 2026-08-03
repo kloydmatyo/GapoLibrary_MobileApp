@@ -15,7 +15,7 @@ export default function AuthLayout() {
         options={{ 
           headerShown: true, 
           title: 'Resend Verification',
-          headerStyle: { backgroundColor: '#0D6E6E' },
+          headerStyle: { backgroundColor: '#3FA36C' },
           headerTintColor: '#fff',
         }} 
       />

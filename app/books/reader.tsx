@@ -1,13 +1,18 @@
 import { useEffect, useState } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, ActivityIndicator,
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
+import * as SecureStore from 'expo-secure-store';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { WebView, type WebViewErrorEvent } from 'react-native-webview';
+import { WebView } from 'react-native-webview';
 import Colors, { Radius } from '@/constants/colors';
 import { Fonts } from '@/constants/typography';
-import { BASE_URL } from '@/lib/api';
+import { BASE_URL, getBook } from '@/lib/api';
 
 const cardShadow = {
   elevation: 2 as const,
@@ -18,34 +23,85 @@ const cardShadow = {
 };
 
 export default function ReaderScreen() {
-  const params = useLocalSearchParams<{
-    id?: string;
-    title?: string;
-  }>();
+  const params = useLocalSearchParams<{ id?: string; title?: string }>();
   const router = useRouter();
+  const [readerUrl, setReaderUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const title = params.title ? decodeURIComponent(params.title) : 'eBook Reader';
 
-  // Android WebView cannot render PDFs natively — it just downloads them.
-  // Wrap the URL in Google Docs Viewer so it renders inline on all platforms.
-  const proxyUrl = params.id ? `${BASE_URL}/ebooks/${params.id}/view` : null;
-  const url = proxyUrl
-    ? `https://docs.google.com/viewer?embedded=true&url=${encodeURIComponent(proxyUrl)}`
-    : null;
+  const buildUrl = async () => {
+    if (!params.id) return null;
+
+    try {
+      const res = await getBook(params.id);
+      const book = res.data?.book ?? res.data;
+      const pdfUrl: string | undefined = book?.ebookUrl;
+
+      if (pdfUrl) {
+        return `https://docs.google.com/viewer?embedded=true&url=${encodeURIComponent(pdfUrl)}`;
+      }
+    } catch {
+      // Fall through to the legacy redirect path below.
+    }
+
+    const token = await SecureStore.getItemAsync('session_token');
+    if (!token) return null;
+
+    const authUrl = `${BASE_URL}/ebooks/${params.id}/view-redirect?token=${encodeURIComponent(token)}`;
+    const res = await fetch(authUrl);
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    const pdfUrl: string | undefined = data.pdfUrl;
+    if (!pdfUrl) return null;
+
+    return `https://docs.google.com/viewer?embedded=true&url=${encodeURIComponent(pdfUrl)}`;
+  };
+
+  useEffect(() => {
+    if (!params.id) return;
+
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+
+    (async () => {
+      const url = await buildUrl();
+      if (cancelled) return;
+
+      if (url) {
+        setReaderUrl(url);
+      } else {
+        setLoading(false);
+        setError('We could not load the eBook reader. Please try again.');
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [params.id]);
 
   const handleRetry = () => {
-    setError(false);
+    if (!params.id) return;
+
+    setError(null);
     setLoading(true);
+    setReaderUrl(null);
+
+    void buildUrl().then((url) => {
+      if (url) {
+        setReaderUrl(url);
+      } else {
+        setLoading(false);
+        setError('We could not load the eBook reader. Please try again.');
+      }
+    });
   };
 
-  const handleWebViewError = (event: WebViewErrorEvent) => {
-    setLoading(false);
-    setError(true);
-  };
-
-  if (!url) {
+  if (!params.id) {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
@@ -59,7 +115,7 @@ export default function ReaderScreen() {
           <Ionicons name="alert-circle" size={64} color={Colors.error} />
           <Text style={styles.errorTitle}>eBook Not Available</Text>
           <Text style={styles.errorMessage}>
-            No eBook URL was provided. Please try again from the book details page.
+            No eBook ID was provided. Please try again from the book details page.
           </Text>
           <TouchableOpacity style={styles.retryBtn} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={18} color="#fff" />
@@ -72,7 +128,6 @@ export default function ReaderScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
@@ -86,44 +141,44 @@ export default function ReaderScreen() {
         <Text style={styles.noticeText}>This eBook is for viewing only. Downloads are not permitted.</Text>
       </View>
 
-      {/* Error State */}
-      {error && (
+      <View style={{ flex: 1 }}>
+        {readerUrl && !error ? (
+          <WebView
+            source={{ uri: readerUrl }}
+            style={{ flex: 1 }}
+            onLoadStart={() => setLoading(true)}
+            onLoadEnd={() => setLoading(false)}
+            onError={() => {
+              setLoading(false);
+              setError('We could not load the eBook reader. Please try again.');
+            }}
+            javaScriptEnabled
+            domStorageEnabled
+            scalesPageToFit
+            allowsInlineMediaPlayback
+            onShouldStartLoadWithRequest={() => true}
+          />
+        ) : null}
+
+        {error ? (
         <View style={styles.errorOverlay}>
           <View style={styles.errorContent}>
             <Ionicons name="alert-circle" size={64} color={Colors.error} />
-            <Text style={styles.errorTitle}>Could Not Load eBook</Text>
-            <Text style={styles.errorMessage}>
-              There was a problem loading the eBook. Please try again.
-            </Text>
+            <Text style={styles.errorTitle}>Could Not Open eBook</Text>
+            <Text style={styles.errorMessage}>{error}</Text>
             <TouchableOpacity style={styles.retryBtn} onPress={handleRetry}>
               <Ionicons name="refresh" size={18} color="#fff" />
               <Text style={styles.retryBtnText}>Retry</Text>
             </TouchableOpacity>
           </View>
         </View>
-      )}
-
-      {/* Loading State */}
-      {loading && (
+        ) : loading ? (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color={Colors.accent} />
-          <Text style={styles.loadingText}>Loading eBook...</Text>
+          <Text style={styles.loadingText}>The eBook is opening in the reader.</Text>
         </View>
-      )}
-
-      {/* WebView */}
-      <WebView
-        source={{ uri: url }}
-        style={styles.webview}
-        onLoadStart={() => setLoading(true)}
-        onLoadEnd={() => setLoading(false)}
-        onError={handleWebViewError}
-        startInLoadingState={false}
-        scalesPageToFit
-        javaScriptEnabled
-        domStorageEnabled
-        allowsInlineMediaPlayback
-      />
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -148,36 +203,42 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     textAlign: 'center',
   },
-  webview: {
+  noticeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: Colors.surfaceMuted,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  noticeText: {
     flex: 1,
+    fontSize: 13,
+    fontFamily: Fonts.body,
+    color: Colors.textSecond,
+    lineHeight: 18,
   },
   loadingOverlay: {
-    position: 'absolute',
-    top: 106,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: Colors.background,
-    zIndex: 10,
+    paddingHorizontal: 24,
   },
   loadingText: {
     marginTop: 12,
     fontSize: 14,
     fontFamily: Fonts.body,
     color: Colors.textSecond,
+    textAlign: 'center',
   },
   errorOverlay: {
-    position: 'absolute',
-    top: 106,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: Colors.background,
-    zIndex: 10,
   },
   errorContent: {
     justifyContent: 'center',
@@ -226,22 +287,5 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontFamily: Fonts.bodySemiBold,
     fontSize: 16,
-  },
-  noticeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: Colors.surfaceMuted,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-  },
-  noticeText: {
-    flex: 1,
-    fontSize: 13,
-    fontFamily: Fonts.body,
-    color: Colors.textSecond,
-    lineHeight: 18,
   },
 });

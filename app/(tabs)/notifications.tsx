@@ -115,7 +115,7 @@ export default function NotificationsScreen() {
     if (unread.length === 0) return;
     setMarkingAll(true);
     try {
-      await api.post('/notifications/read-all');
+      await api.patch('/notifications/read-all');
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
     } catch {}
     finally { setMarkingAll(false); }

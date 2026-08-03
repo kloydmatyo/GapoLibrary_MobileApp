@@ -91,7 +91,7 @@ export default function CustomHeader() {
 
   const markAllAsRead = async () => {
     try {
-      await api.post('/notifications/read-all');
+      await api.patch('/notifications/read-all');
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
       setUnreadCount(0);
     } catch {}

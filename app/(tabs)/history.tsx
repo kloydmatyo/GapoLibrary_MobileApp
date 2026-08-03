@@ -4,7 +4,7 @@ import {
   RefreshControl, ScrollView, TouchableOpacity, Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { getHistory, getBooks, renewLoan } from '@/lib/api';
+import { getHistory, renewLoan } from '@/lib/api';
 import Colors, { Radius } from '@/constants/colors';
 import { Fonts } from '@/constants/typography';
 import { useOverdue } from '@/context/OverdueContext';
@@ -24,6 +24,8 @@ interface HistoryItem {
   returnedTo?: string | null;
   isbn?: string;
   coverImageUrl?: string;
+  bookCoverImageUrl?: string | null;
+  bookIsbn?: string | null;
   renewalCount?: number;
   renewedAt?: string | null;
 }
@@ -59,26 +61,19 @@ export default function HistoryScreen() {
 
   const fetchHistory = useCallback(async () => {
     try {
-      const [historyRes, booksRes] = await Promise.all([getHistory(), getBooks({})]);
+      const historyRes = await getHistory();
       const historyData: HistoryItem[] = historyRes.data.history;
-      const bookMeta = new Map<string, { isbn?: string; coverImageUrl?: string }>(
-        (booksRes.data.books ?? []).map((b: { _id: string; isbn?: string; coverImageUrl?: string }) => [
-          b._id,
-          { isbn: b.isbn, coverImageUrl: b.coverImageUrl },
-        ]),
-      );
 
       const normalised = historyData.map((item) => {
         // Don't normalize pending_renewal — keep it as-is
         const displayStatus = item.status === 'pending_renewal'
           ? 'pending_renewal'
           : normalizeLoanStatus(item.status, item.dueDate);
-        const meta = item.bookId ? bookMeta.get(item.bookId) : undefined;
         return {
           ...item,
           status: displayStatus as HistoryItem['status'],
-          isbn: meta?.isbn,
-          coverImageUrl: meta?.coverImageUrl,
+          isbn: (item as any).bookIsbn ?? item.isbn,
+          coverImageUrl: (item as any).bookCoverImageUrl ?? item.coverImageUrl,
         };
       });
 
@@ -160,7 +155,7 @@ export default function HistoryScreen() {
     if (item.status !== 'active') return false;
     if ((item.renewalCount ?? 0) >= 1) return false;
     const daysLeft = getDaysLeft(item.dueDate);
-    return daysLeft >= 1 && daysLeft <= 2;
+    return daysLeft >= 0 && daysLeft <= 2;
   };
 
   const renderItem = ({ item }: { item: HistoryItem }) => {

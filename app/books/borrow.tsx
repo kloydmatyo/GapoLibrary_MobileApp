@@ -60,7 +60,7 @@ export default function BorrowScreen() {
         setBook(fetchedBook);
 
         const history: any[] = historyRes.data.history;
-        const active = history.filter((h) => h.status === 'pending_pickup' || h.status === 'active');
+        const active = history.filter((h) => h.status === 'pending_pickup' || h.status === 'active' || h.status === 'pending_renewal');
         const overdue = history.filter((h) => h.status === 'overdue');
 
         setActiveLoans(active.length);
@@ -100,7 +100,7 @@ export default function BorrowScreen() {
   const handleConfirm = async () => {
     setSubmitting(true);
     try {
-      await borrowBook(id);
+      await borrowBook(id, user?.id ?? '');
       setSuccess(true);
     } catch (err: any) {
       const msg = err?.response?.data?.error || 'Could not submit borrow request.';

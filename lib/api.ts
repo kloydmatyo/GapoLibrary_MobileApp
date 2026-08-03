@@ -51,6 +51,7 @@ export const login = (email: string, password: string) =>
 export const register = (data: {
   email: string; password: string; firstName: string; lastName: string;
   phone?: string; address?: string; memberCategory?: string;
+  gender: string; age: number; isPwd?: boolean; disabilityType?: string;
 }) => api.post('/auth/register', data);
 
 export const logout = () => api.post('/auth/logout');
@@ -66,12 +67,15 @@ export const getBookReviews = (id: string) => api.get(`/books/${id}/reviews`);
 export const submitBookReview = (id: string, score: number, comment?: string) =>
   api.post(`/books/${id}/reviews`, { score, comment });
 
-// --- Circulation ---
-export const getHistory = (userId?: string) =>
-  api.get('/circulation/history', { params: userId ? { userId } : {} });
+export const deleteBookReview = (bookId: string, reviewId: string) =>
+  api.delete(`/books/${bookId}/reviews/${reviewId}`);
 
-export const borrowBook = (bookId: string) =>
-  api.post('/circulation/checkout', { bookId });
+// --- Circulation ---
+export const getHistory = (patronId?: string) =>
+  api.get('/circulation/history', { params: patronId ? { patronId } : {} });
+
+export const borrowBook = (bookId: string, patronId: string) =>
+  api.post('/circulation/checkout', { bookId, patronId });
 
 export const renewLoan = (circulationId: string) =>
   api.post('/circulation/renew', { circulationId });
@@ -84,7 +88,7 @@ export const getReservations = (bookId?: string) =>
   api.get('/reservations', { params: bookId ? { bookId } : {} });
 
 export const cancelReservation = (reservationId: string) =>
-  api.delete('/reservations', { data: { reservationId } });
+  api.delete(`/reservations/${reservationId}`);
 
 // --- Bookmarks ---
 export const toggleBookmark = (bookId: string) =>

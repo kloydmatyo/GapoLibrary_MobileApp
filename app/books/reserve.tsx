@@ -36,7 +36,6 @@ interface Reservation {
 export default function ReserveScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { user } = useAuth();
 
   const [book, setBook] = useState<Book | null>(null);
   const [queueLength, setQueueLength] = useState(0);
@@ -49,19 +48,16 @@ export default function ReserveScreen() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [bookRes, queueRes, myRes] = await Promise.all([
+        const [bookRes, myRes] = await Promise.all([
           getBook(id),
-          getReservations(id),       // all pending reservations for this book
           getReservations(),          // current user's reservations (no bookId = user-scoped)
         ]);
 
         setBook(bookRes.data.book);
-
-        const allForBook: Reservation[] = queueRes.data.reservations ?? [];
-        setQueueLength(allForBook.length);
+        setQueueLength(Number(bookRes.data.queueLength ?? 0));
 
         const mine = (myRes.data.reservations ?? []).find(
-          (r: Reservation) => r.bookId === id && r.status === 'pending'
+          (r: Reservation) => r.bookId === id && (r.status === 'waiting' || r.status === 'notified')
         );
         setMyReservation(mine ?? null);
       } catch {

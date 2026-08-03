@@ -12,7 +12,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import StarRow, { SCORE_LABELS } from '@/components/StarRow';
-import { getBook, getBookReviews, submitBookReview } from '@/lib/api';
+import { deleteBookReview, getBook, getBookReviews, submitBookReview } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import Colors, { Radius } from '@/constants/colors';
 import { Fonts } from '@/constants/typography';
@@ -41,6 +41,7 @@ export default function BookReviewScreen() {
   const [comment, setComment] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -77,7 +78,32 @@ export default function BookReviewScreen() {
     }
   };
 
-  const canSubmit = useMemo(() => score > 0 && !submitting, [score, submitting]);
+  const canSubmit = useMemo(() => score > 0 && !submitting && !deleting, [score, submitting, deleting]);
+
+  const handleDelete = () => {
+    if (!existingReview) {
+      return;
+    }
+
+    Alert.alert('Delete Review', 'Are you sure you want to delete your review?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          setDeleting(true);
+          try {
+            await deleteBookReview(id, existingReview._id);
+            router.replace(`/books/${id}?reviewUpdated=${Date.now()}` as any);
+          } catch (err: any) {
+            Alert.alert('Error', err?.response?.data?.error || 'Failed to delete review.');
+          } finally {
+            setDeleting(false);
+          }
+        },
+      },
+    ]);
+  };
 
   const handleSubmit = async () => {
     if (score === 0) {
@@ -160,6 +186,20 @@ export default function BookReviewScreen() {
             <Text style={styles.submitText}>{existingReview ? 'Update Review' : 'Submit Review'}</Text>
           )}
         </TouchableOpacity>
+
+        {existingReview && (
+          <TouchableOpacity
+            style={[styles.deleteBtn, deleting && styles.deleteBtnDisabled]}
+            onPress={handleDelete}
+            disabled={deleting}
+          >
+            {deleting ? (
+              <ActivityIndicator color={Colors.error} />
+            ) : (
+              <Text style={styles.deleteText}>Delete Review</Text>
+            )}
+          </TouchableOpacity>
+        )}
       </ScrollView>
     </View>
   );
@@ -232,5 +272,16 @@ const styles = StyleSheet.create({
   },
   submitBtnDisabled: { opacity: 0.45 },
   submitText: { color: '#fff', fontSize: 16, fontFamily: Fonts.bodySemiBold },
+  deleteBtn: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: Colors.error,
+    backgroundColor: 'transparent',
+    borderRadius: Radius.container,
+    padding: 16,
+    alignItems: 'center',
+  },
+  deleteBtnDisabled: { opacity: 0.45 },
+  deleteText: { color: Colors.error, fontSize: 16, fontFamily: Fonts.bodySemiBold },
   emptyText: { fontFamily: Fonts.body, color: Colors.textMuted, fontSize: 14 },
 });

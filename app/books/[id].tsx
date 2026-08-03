@@ -280,11 +280,11 @@ export default function BookDetailScreen() {
           )}
         </View>
 
-        {book.isEbook && book.ebookUrl ? (
+        {book.isEbook && book._id ? (
           <TouchableOpacity
             style={styles.readOnlineBtn}
             onPress={() => {
-              router.push(`/books/reader?id=${id}&title=${encodeURIComponent(book.title)}&url=${encodeURIComponent(book.ebookUrl!)}` as any);
+              router.push(`/books/reader?id=${id}&title=${encodeURIComponent(book.title)}` as any);
             }}
           >
             <Ionicons name="reader-outline" size={20} color="#fff" />
